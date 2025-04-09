@@ -1,0 +1,33 @@
+name: tp
+services:
+  server:
+    container_name: server
+    image: server:latest
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./server/config.ini:/config.ini
+    networks:
+      - testing_net
+
+  client:
+    container_name: client
+    image: client:latest
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./client/config.ini:/config.ini
+      - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
+      - ./datasets/ratings.csv:/datasets/ratings.csv
+      - ./datasets/credits.csv:/datasets/credits.csv
+    networks:
+      - testing_net
+    depends_on:
+      - server
+
+networks:
+  testing_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.125.0/24
