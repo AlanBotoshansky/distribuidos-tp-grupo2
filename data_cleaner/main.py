@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-from src.server import Server
+from src.data_cleaner import DataCleaner
 import logging
 import os
 
@@ -58,9 +58,8 @@ def main():
     logging.debug(f"action: config | result: success | port: {port} | "
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
-    # Initialize server
-    server = Server(port, listen_backlog)
-    server.run()
+    data_cleaner = DataCleaner(port, listen_backlog)
+    data_cleaner.run()
 
 if __name__ == "__main__":
     main()

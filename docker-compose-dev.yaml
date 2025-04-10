@@ -1,12 +1,12 @@
 name: tp
 services:
-  server:
-    container_name: server
-    image: server:latest
+  data_cleaner:
+    container_name: data_cleaner
+    image: data_cleaner:latest
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./server/config.ini:/config.ini
+      - ./data_cleaner/config.ini:/config.ini
     networks:
       - testing_net
 
@@ -23,7 +23,7 @@ services:
     networks:
       - testing_net
     depends_on:
-      - server
+      - data_cleaner
 
 networks:
   testing_net:

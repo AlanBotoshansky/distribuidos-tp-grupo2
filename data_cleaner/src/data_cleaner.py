@@ -1,16 +1,29 @@
 import socket
 import logging
 import signal
+from enum import IntEnum
 import src.communication as communication
+from messages.movie import Movie, InvalidLineError
 
-class Server:
+class FileType(IntEnum):
+    MOVIES = 0
+    RATINGS = 1
+    CREDITS = 2
+    
+    def next(self):
+        if self == FileType.CREDITS:
+            return FileType.CREDITS
+        return FileType(self.value + 1)
+
+class DataCleaner:
     def __init__(self, port, listen_backlog):
-        # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._shutdown_requested = False
-        self.client_sock = None
+        self._client_sock = None
+        self._cleaning_file = FileType.MOVIES
+        self._movies_header = None
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -29,8 +42,8 @@ class Server:
         """
         try:
             logging.info("action: close_client_socket | result: in_progress") 
-            self.client_sock.shutdown(socket.SHUT_RDWR)
-            self.client_sock.close()
+            self._client_sock.shutdown(socket.SHUT_RDWR)
+            self._client_sock.close()
             logging.info('action: close_client_socket | result: success')
         except OSError as e:
             logging.error(f"action: close_client_socket | result: fail | error: {e}")
@@ -53,7 +66,7 @@ class Server:
         # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
         c, addr = self._server_socket.accept()
-        self.client_sock = c
+        self._client_sock = c
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
     
@@ -67,11 +80,23 @@ class Server:
         while not self._shutdown_requested:
             try:
                 msg = communication.receive_message(client_sock)
-                addr = client_sock.getpeername()
-                # logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
+                self.__handle_client_message(msg)
             except (OSError, ConnectionError) as e:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
                 break
+            
+    def __handle_client_message(self, msg):
+        if msg == communication.EOF:
+            if self._cleaning_file == FileType.MOVIES:
+                logging.info(f'action: receive_message | result: success | msg: EOF_movies')
+            self._cleaning_file = self._cleaning_file.next()
+            return
+        if self._cleaning_file == FileType.MOVIES:
+            try:
+                _movie = Movie.from_csv_line(msg)
+            except InvalidLineError as e:
+                # logging.error(f"action: handle_message | result: fail | error: {e}")
+                return  
     
     def run(self):
         """

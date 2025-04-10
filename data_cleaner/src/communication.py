@@ -1,4 +1,5 @@
-LENGTH_BYTES = 2
+LENGTH_BYTES = 3
+EOF = 'EOF'
 
 def read_bytes(socket, length):
     """Reads bytes from the socket"""
@@ -7,7 +8,7 @@ def read_bytes(socket, length):
     while total_bytes_received < length:
         bytesReceived = socket.recv(length - total_bytes_received)
         if not bytesReceived:
-            raise ConnectionError
+            raise ConnectionError("Client disconnected")
         data.extend(bytesReceived)
         total_bytes_received += len(bytesReceived)
     return data

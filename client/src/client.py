@@ -36,12 +36,15 @@ class Client:
         with open(file_path) as file:
             next(file)
             for line in file:
-                communication.send_message(self.socket, line.rstrip()) 
+                communication.send_message(self.socket, line.rstrip())
 
     def _send_data(self):
         self._send_file(self._movies_path)
+        communication.send_message(self.socket, communication.EOF)
         self._send_file(self._ratings_path)
+        communication.send_message(self.socket, communication.EOF)
         self._send_file(self._credits_path)
+        communication.send_message(self.socket, communication.EOF)
         
     def run(self):
         logging.info(f"Connecting to server at {self._server_ip}:{self._server_port}")

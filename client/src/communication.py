@@ -1,4 +1,5 @@
-LENGTH_BYTES = 2
+LENGTH_BYTES = 3
+EOF = 'EOF'
 
 def send_message(socket, message):
     encoded_message = message.encode('utf-8')
