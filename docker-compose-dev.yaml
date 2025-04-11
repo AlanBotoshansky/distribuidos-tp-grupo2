@@ -6,7 +6,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./data_cleaner/config.ini:/config.ini
+      - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
       - testing_net
 
