@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-from src.data_cleaner import DataCleaner
+from src.movies_filter import MoviesFilter
 import logging
 import os
+import ast
 
 def initialize_config():
     """ Parse env variables or config file to find program config params
@@ -22,10 +23,10 @@ def initialize_config():
 
     config_params = {}
     try:
-        config_params["port"] = int(os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
-        config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["movies_exchange"] = os.getenv('MOVIES_EXCHANGE')
+        config_params["filter_field"] = os.getenv('FILTER_FIELD')
+        config_params["filter_values"] = ast.literal_eval(os.getenv('FILTER_VALUES'))
+        config_params["output_fields_subset"] = ast.literal_eval(os.getenv('OUTPUT_FIELDS_SUBSET'))
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -48,20 +49,19 @@ def initialize_log(logging_level):
 
 def main():
     config_params = initialize_config()
-    port = config_params["port"]
-    listen_backlog = config_params["listen_backlog"]
     logging_level = config_params["logging_level"]
-    movies_exchange = config_params["movies_exchange"]
-
+    filter_field = config_params["filter_field"]
+    filter_values = config_params["filter_values"]
+    output_fields_subset = config_params["output_fields_subset"]
+    
     initialize_log(logging_level)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | port: {port} | "
-                  f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level}")
 
-    data_cleaner = DataCleaner(port, listen_backlog, movies_exchange)
-    data_cleaner.run()
+    movies_filter = MoviesFilter(filter_field, filter_values, output_fields_subset)
+    movies_filter.run()
 
 if __name__ == "__main__":
     main()

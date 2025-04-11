@@ -5,6 +5,7 @@ services:
     image: data_cleaner:latest
     environment:
       - PYTHONUNBUFFERED=1
+      - MOVIES_EXCHANGE=movies
     volumes:
       - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
@@ -24,6 +25,17 @@ services:
       - testing_net
     depends_on:
       - data_cleaner
+
+  movies_filter_produced_in_argentina_and_spain:
+    container_name: movies_filter_produced_in_argentina_and_spain
+    image: movies_filter:latest
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FILTER_FIELD=production_countries
+      - FILTER_VALUES=["Argentina", "Spain"]
+      - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
+    networks:
+      - testing_net
 
 networks:
   testing_net:
