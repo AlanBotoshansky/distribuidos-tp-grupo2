@@ -1,6 +1,10 @@
 from datetime import datetime
 
+LENGTH_PACKET_TYPE = 1
 LENGTH_FIELD = 2
+
+def encode_packet_type(packet_type):
+    return packet_type.to_bytes(LENGTH_PACKET_TYPE, 'big')
 
 def encode_string(s):
     data_bytes = s.encode('utf-8')

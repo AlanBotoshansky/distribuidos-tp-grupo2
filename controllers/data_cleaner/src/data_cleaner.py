@@ -5,6 +5,7 @@ from enum import IntEnum
 import multiprocessing as mp
 import src.communication as communication
 from messages.movie import Movie, InvalidLineError
+from messages.eof import EOF
 from middleware.middleware import Middleware
 
 MOVIES_QUEUE_SIZE = 10000
@@ -100,7 +101,7 @@ class DataCleaner:
         if msg == communication.EOF:
             if self._cleaning_file == FileType.MOVIES:
                 logging.info(f'action: receive_message | result: success | msg: EOF_movies')
-                # Propagar EOF
+                self._movies_queue.put(EOF())
                 self._movies_queue.put(None)
             self._cleaning_file = self._cleaning_file.next()
             return
@@ -115,12 +116,12 @@ class DataCleaner:
     def __send_movies(self):
         middleware = Middleware(output_exchange=self._movies_exchange)
         while not self._shutdown_requested:
-            movie = self._movies_queue.get()
-            if not movie:
+            msg = self._movies_queue.get()
+            if not msg:
                 logging.info("action: stop_sending | result: success")
                 middleware.close_connection()
                 return
-            middleware.send_message(movie.serialize())
+            middleware.send_message(msg.serialize())
     
     def run(self):
         """
