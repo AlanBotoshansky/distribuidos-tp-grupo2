@@ -116,7 +116,7 @@ class DataCleaner:
             movie = self._movies_queue.get()
             if not movie:
                 logging.info("action: stop_sending | result: success")
-                # cerrar middleware
+                middleware.close_connection()
                 return
             middleware.send_message(movie.serialize())
     

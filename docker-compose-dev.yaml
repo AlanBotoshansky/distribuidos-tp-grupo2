@@ -34,6 +34,8 @@ services:
       - FILTER_FIELD=production_countries
       - FILTER_VALUES=["Argentina", "Spain"]
       - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
+      - INPUT_QUEUES=[("movies_q1", "movies")]
+      - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
     networks:
       - testing_net
 
