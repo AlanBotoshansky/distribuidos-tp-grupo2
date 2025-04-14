@@ -39,6 +39,19 @@ services:
     networks:
       - testing_net
 
+  movies_filter_released_between_2000_2009:
+    container_name: movies_filter_released_between_2000_2009
+    image: movies_filter:latest
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FILTER_FIELD=release_date
+      - FILTER_VALUES=(2000, 2009)
+      - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
+      - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
+      - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
+    networks:
+      - testing_net
+
 networks:
   testing_net:
     ipam:

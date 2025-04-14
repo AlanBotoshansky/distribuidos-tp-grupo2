@@ -100,6 +100,8 @@ class DataCleaner:
         if msg == communication.EOF:
             if self._cleaning_file == FileType.MOVIES:
                 logging.info(f'action: receive_message | result: success | msg: EOF_movies')
+                # Propagar EOF
+                self._movies_queue.put(None)
             self._cleaning_file = self._cleaning_file.next()
             return
         if self._cleaning_file == FileType.MOVIES:

@@ -4,6 +4,7 @@ from middleware.middleware import Middleware
 from messages.movie import Movie
 
 PRODUCTION_COUNTRIES_FIELD = 'production_countries'
+RELEASE_DATE_FIELD = 'release_date'
 
 class MoviesFilter:
     def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange):
@@ -38,6 +39,12 @@ class MoviesFilter:
             for country in self._filter_values:
                 if country not in movie.production_countries:
                     return False
+            return True
+        
+        if self._filter_field == RELEASE_DATE_FIELD:
+            min_year, max_year = self._filter_values
+            if movie.release_date.year < min_year or movie.release_date.year > max_year:
+                return False
             return True
         
         return False
