@@ -5,6 +5,7 @@ default: build
 
 docker-image:
 	docker build -f ./controllers/data_cleaner/Dockerfile -t "data_cleaner:latest" .
+	docker build -f ./controllers/movies_filter/Dockerfile -t "movies_filter:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
 	# Execute this command from time to time to clean up intermediate stages generated 
 	# during client build (your hard drive will like this :) ). Don't left uncommented if you 
