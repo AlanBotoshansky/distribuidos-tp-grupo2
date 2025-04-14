@@ -1,7 +1,7 @@
 import logging
 import socket
 import signal
-import src.communication as communication
+import communication.communication as communication
 
 class Client:
     

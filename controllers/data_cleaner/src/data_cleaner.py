@@ -3,7 +3,7 @@ import logging
 import signal
 from enum import IntEnum
 import multiprocessing as mp
-import src.communication as communication
+import communication.communication as communication
 from messages.movie import Movie, InvalidLineError
 from messages.eof import EOF
 from middleware.middleware import Middleware
