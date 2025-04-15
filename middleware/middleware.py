@@ -6,10 +6,11 @@ EXCHANGE_TYPE = 'fanout'
 PREFETCH_COUNT = 1
 
 class Middleware:
-    def __init__(self, callback_function=None, input_queues=[], output_exchange=None):
+    def __init__(self, callback_function=None, callback_args=(), input_queues=[], output_exchange=None):
         self._connection = pika.BlockingConnection(pika.ConnectionParameters(host=HOST))
         self._channel = self._connection.channel()
         self._callback_function = callback_function
+        self._callback_args = callback_args
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         
@@ -28,7 +29,7 @@ class Middleware:
             
     def __wrapper_callback_function(self):
         def callback(ch, method, properties, body):
-            self._callback_function(body)
+            self._callback_function(body, *self._callback_args)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             
         return callback
