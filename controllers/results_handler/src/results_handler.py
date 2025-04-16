@@ -40,6 +40,7 @@ class ResultsHandler:
             logging.info("action: sender_process_finished | result: success")
             
         for middleware in self._middlewares:
+            middleware.stop_handling_messages()
             middleware.close_connection()
             logging.info("action: middleware_closed | result: success")
             self._middlewares.remove(middleware)

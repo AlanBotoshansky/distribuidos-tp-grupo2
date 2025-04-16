@@ -31,6 +31,7 @@ class MoviesFilter:
         """
         Cleanup resources during shutdown
         """
+        self._middleware.stop_handling_messages()
         self._middleware.close_connection()
 
     def __filter_movie(self, movie):
