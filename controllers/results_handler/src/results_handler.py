@@ -3,7 +3,6 @@ import logging
 import signal
 import multiprocessing as mp
 import communication.communication as communication
-from communication.communication import communication
 from middleware.middleware import Middleware
 from messages.packet_deserializer import PacketDeserializer
 
@@ -99,6 +98,7 @@ class ResultsHandler:
     
     def __handle_client_connection(self, client_sock):
         self._sender_process = mp.Process(target=self.__send_results, args=(client_sock,), daemon=True)
+        self._sender_process.start()
         for i, input_queue in enumerate(self._input_queues):
             num_query = i + 1
             middleware = Middleware(callback_function=self.__handle_result_packet, callback_args=(num_query,), input_queues=[input_queue])
