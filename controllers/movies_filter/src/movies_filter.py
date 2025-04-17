@@ -31,6 +31,7 @@ class MoviesFilter:
         """
         Cleanup resources during shutdown
         """
+        self._middleware.stop_handling_messages()
         self._middleware.close_connection()
 
     def __filter_movie(self, movie):
@@ -56,7 +57,7 @@ class MoviesFilter:
         if msg.packet_type() == PacketType.MOVIE:
             movie = msg
             if self.__filter_movie(movie):
-                logging.info(f"action: movie_filtered | result: success | movie_id: {movie.id}") 
+                logging.debug(f"action: movie_filtered | result: success | movie_id: {movie.id}") 
                 self._middleware.send_message(movie.serialize(fields_subset=self._output_fields_subset))
         elif msg.packet_type() == PacketType.EOF:
             eof = msg

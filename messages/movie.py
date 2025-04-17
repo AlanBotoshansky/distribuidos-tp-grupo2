@@ -41,6 +41,9 @@ class Movie:
         
     def __repr__(self):
         return f"Movie(id={self.id}, title={self.title}, genres={self.genres}, production_countries={self.production_countries}, release_date={self.release_date}, budget={self.budget}, overview={self.overview}, revenue={self.revenue})"
+    
+    def packet_type(self):
+        return PacketType.MOVIE
 
     def serialize(self, fields_subset=None):
         field_type_map = {
@@ -137,7 +140,7 @@ class Movie:
             overview=overview,
             revenue=revenue
         )
-    
+
     @classmethod
     def __parse_budget(cls, budget_str):
         if not budget_str.isdecimal():
@@ -179,5 +182,30 @@ class Movie:
             raise InvalidLineError(f"Invalid revenue: {revenue_str}")
         return float(revenue_str)
     
-    def packet_type(self):
-        return PacketType.MOVIE
+    def to_csv_line(self):
+        result_line = []
+        if self.id is not None:
+            result_line.append(str(self.id))
+            
+        if self.title is not None:
+            result_line.append(self.title)
+            
+        if self.genres is not None:
+            result_line.append(str(self.genres))
+            
+        if self.production_countries is not None:
+            result_line.append(str(self.production_countries))
+        
+        if self.release_date is not None:
+            result_line.append(self.release_date.strftime('%Y-%m-%d'))
+            
+        if self.budget is not None:
+            result_line.append(str(self.budget))
+            
+        if self.overview is not None:
+            result_line.append(self.overview)
+            
+        if self.revenue is not None:
+            result_line.append(str(self.revenue))
+            
+        return ','.join(result_line)

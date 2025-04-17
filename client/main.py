@@ -23,8 +23,10 @@ def initialize_config():
 
     config_params = {}
     try:
-        config_params["server_ip"] = os.getenv('SERVER_IP', config["DEFAULT"]["SERVER_IP"])
-        config_params["server_port"] = int(os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
+        config_params["server_ip_data"] = os.getenv('SERVER_IP_DATA', config["DEFAULT"]["SERVER_IP_DATA"])
+        config_params["server_port_data"] = int(os.getenv('SERVER_PORT_DATA', config["DEFAULT"]["SERVER_PORT_DATA"]))
+        config_params["server_ip_results"] = os.getenv('SERVER_IP_RESULTS', config["DEFAULT"]["SERVER_IP_RESULTS"])
+        config_params["server_port_results"] = int(os.getenv('SERVER_PORT_RESULTS', config["DEFAULT"]["SERVER_PORT_RESULTS"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["movies_path"] = os.getenv('MOVIES_PATH', config["DEFAULT"]["MOVIES_PATH"])
         config_params["ratings_path"] = os.getenv('RATINGS_PATH', config["DEFAULT"]["RATINGS_PATH"])
@@ -51,8 +53,10 @@ def initialize_log(logging_level):
 
 def main():
     config_params = initialize_config()
-    server_ip = config_params["server_ip"]
-    server_port = config_params["server_port"]
+    server_ip_data = config_params["server_ip_data"]
+    server_port_data = config_params["server_port_data"]
+    server_ip_results = config_params["server_ip_results"]
+    server_port_results = config_params["server_port_results"]
     logging_level = config_params["logging_level"]
     movies_path = config_params["movies_path"]
     ratings_path = config_params["ratings_path"]
@@ -62,11 +66,11 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | server_ip: {server_ip} | server_port: {server_port} | "
-                  f"logging_level: {logging_level}")
+    logging.debug(f"action: config | result: success | server_ip_data: {server_ip_data} | server_port_data: {server_port_data} | "
+                  f"server_ip_results: {server_ip_results} | server_port_results: {server_port_results} | logging_level: {logging_level}")
     
     # Initialize client
-    client = Client(server_ip, server_port, movies_path, ratings_path, credits_path)
+    client = Client(server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path)
     client.run()
 
 if __name__ == "__main__":
