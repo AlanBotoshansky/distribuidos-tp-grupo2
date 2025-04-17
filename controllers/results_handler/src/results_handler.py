@@ -3,8 +3,7 @@ import logging
 import signal
 import multiprocessing as mp
 import communication.communication as communication
-from middleware.middleware import Middleware
-from messages.packet_deserializer import PacketDeserializer
+from src.query_results_handler import QueryResultsHandler
 
 class ResultsHandler:
     def __init__(self, port, listen_backlog, input_queues):
@@ -16,8 +15,7 @@ class ResultsHandler:
         self._results_queue = mp.Queue()
         self._input_queues = input_queues
         self._sender_process = None
-        self._results_handler_processes = []
-        self._middlewares = []
+        self._query_results_handlers = []
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -35,28 +33,21 @@ class ResultsHandler:
         Cleanup server resources during shutdown
         """
         self._results_queue.put(None)
-        if self._sender_process:
-            self._sender_process.join()
-            logging.info("action: sender_process_finished | result: success")
-            
-        for middleware in self._middlewares:
-            middleware.stop_handling_messages()
-            middleware.close_connection()
-            logging.info("action: middleware_closed | result: success")
-            self._middlewares.remove(middleware)
-            
-        for process in self._results_handler_processes:
-            process.join()
-            logging.info("action: results_handler_process_finished | result: success")
-            self._results_handler_processes.remove(process)
-        
         try:    
             logging.info("action: close_client_socket | result: in_progress") 
             self._client_sock.shutdown(socket.SHUT_RDWR)
             self._client_sock.close()
             logging.info('action: close_client_socket | result: success')
         except OSError as e:
-            logging.error(f"action: close_client_socket | result: fail | error: {e}")
+            logging.error(f"action: close_client_socket | result: fail | error: {e}")  
+        if self._sender_process:
+            self._sender_process.join()
+            logging.info("action: sender_process_finished | result: success")
+        
+        for query_results_handler in self._query_results_handlers:
+            query_results_handler.terminate()
+            query_results_handler.join()
+            logging.info("action: query_results_handler_terminated | result: success")
         
         try:
             logging.info('action: close_server_socket | result: in_progress')
@@ -81,32 +72,29 @@ class ResultsHandler:
         return c
     
     def __send_results(self, client_sock):
-        while not self._shutdown_requested:
+        while True:
             result_csv_line = self._results_queue.get()
             if not result_csv_line:
                 logging.info("action: stop_sending | result: success")
                 return
-            communication.send_message(client_sock, result_csv_line)
+            try:
+                communication.send_message(client_sock, result_csv_line)
+            except OSError as e:
+                logging.error(f"action: send_results | result: fail | error: {e}")
+                break
     
-    def __handle_result_packet(self, packet, num_query):
-        msg = PacketDeserializer.deserialize(packet)
-        msg_csv_line = msg.to_csv_line()
-        result_csv_line = f"{num_query},{msg_csv_line}"
-        self._results_queue.put(result_csv_line)
-    
-    def __handle_results(self, middleware):
-        middleware.handle_messages()
+    def __handle_query(self, num_query, input_queues, results_queue):
+        query_results_handler = QueryResultsHandler(num_query, input_queues, results_queue)
+        query_results_handler.run()
     
     def __handle_client_connection(self, client_sock):
         self._sender_process = mp.Process(target=self.__send_results, args=(client_sock,), daemon=True)
         self._sender_process.start()
         for i, input_queue in enumerate(self._input_queues):
             num_query = i + 1
-            middleware = Middleware(callback_function=self.__handle_result_packet, callback_args=(num_query,), input_queues=[input_queue])
-            process = mp.Process(target=self.__handle_results, args=(middleware,), daemon=True)
+            process = mp.Process(target=self.__handle_query, args=(num_query, [input_queue], self._results_queue), daemon=True)
             process.start()
-            self._results_handler_processes.append(process)
-            self._middlewares.append(middleware)
+            self._query_results_handlers.append(process)
     
     def run(self):
         """

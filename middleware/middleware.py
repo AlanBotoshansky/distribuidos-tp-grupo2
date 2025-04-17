@@ -46,7 +46,6 @@ class Middleware:
         try:
             self._channel.start_consuming()
         except OSError:
-            logging.error("action: middleware_start_consuming | result: fail")
             return
             
     def stop_handling_messages(self):
