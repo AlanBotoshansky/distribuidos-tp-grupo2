@@ -10,10 +10,10 @@ def encode_string(s):
     data_bytes = s.encode('utf-8')
     return len(data_bytes).to_bytes(LENGTH_FIELD, 'big') + data_bytes
 
-def encode_list(l):
+def encode_strings_iterable(strings):
     data_bytes = b''
-    for item in l:
-        data_bytes += encode_string(item)
+    for string in strings:
+        data_bytes += encode_string(string)
     return len(data_bytes).to_bytes(LENGTH_FIELD, 'big') + data_bytes
 
 def encode_date(d):
@@ -26,7 +26,7 @@ def encode_num(n):
 def decode_string(data_bytes):
     return data_bytes.decode('utf-8')
 
-def decode_list(data_bytes):
+def decode_strings_list(data_bytes):
     offset = 0
     res = []
     while offset < len(data_bytes):
@@ -48,3 +48,14 @@ def decode_int(data_bytes):
 def decode_float(data_bytes):
     s = decode_string(data_bytes)
     return float(s)
+
+def decode_strings_set(data_bytes):
+    offset = 0
+    res = set()
+    while offset < len(data_bytes):
+        length_elem = int.from_bytes(data_bytes[offset:offset + LENGTH_FIELD], 'big')
+        offset += LENGTH_FIELD
+        elem = data_bytes[offset:offset + length_elem]
+        res.add(decode_string(elem))
+        offset += length_elem
+    return res

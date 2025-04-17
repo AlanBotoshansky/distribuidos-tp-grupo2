@@ -42,6 +42,13 @@ class Middleware:
     def send_message(self, msg):
         self._channel.basic_publish(exchange=self._output_exchange, routing_key='', body=msg)
         
+    def reenqueue_message(self, msg):
+        for queue, exchange in self._input_queues:
+            if exchange:
+                self._channel.basic_publish(exchange=exchange, routing_key=queue, body=msg)
+            else:
+                self._channel.basic_publish(exchange='', routing_key=queue, body=msg)
+        
     def handle_messages(self):
         try:
             self._channel.start_consuming()

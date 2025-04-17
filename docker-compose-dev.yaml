@@ -4,69 +4,111 @@ services:
     container_name: data_cleaner
     image: data_cleaner:latest
     environment:
-      - PYTHONUNBUFFERED=1
-      - MOVIES_EXCHANGE=movies
+    - PYTHONUNBUFFERED=1
+    - MOVIES_EXCHANGE=movies
     volumes:
-      - ./controllers/data_cleaner/config.ini:/config.ini
+    - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
-      - testing_net
-
+    - testing_net
   results_handler:
     container_name: results_handler
     image: results_handler:latest
     environment:
-      - PYTHONUNBUFFERED=1
-      - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009")]
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009",
+      "movies_produced_in_argentina_and_spain_released_between_2000_2009")]
     volumes:
-      - ./controllers/results_handler/config.ini:/config.ini
+    - ./controllers/results_handler/config.ini:/config.ini
     networks:
-      - testing_net
-
+    - testing_net
   client:
     container_name: client
     image: client:latest
     environment:
-      - PYTHONUNBUFFERED=1
+    - PYTHONUNBUFFERED=1
     volumes:
-      - ./client/config.ini:/config.ini
-      - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
-      - ./datasets/ratings.csv:/datasets/ratings.csv
-      - ./datasets/credits.csv:/datasets/credits.csv
+    - ./client/config.ini:/config.ini
+    - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
+    - ./datasets/ratings.csv:/datasets/ratings.csv
+    - ./datasets/credits.csv:/datasets/credits.csv
     networks:
-      - testing_net
+    - testing_net
     depends_on:
-      - data_cleaner
-      - results_handler
-
-  movies_filter_produced_in_argentina_and_spain:
-    container_name: movies_filter_produced_in_argentina_and_spain
+    - data_cleaner
+    - results_handler
+  movies_filter_produced_in_argentina_and_spain_1:
+    container_name: movies_filter_produced_in_argentina_and_spain_1
     image: movies_filter:latest
     environment:
-      - PYTHONUNBUFFERED=1
-      - FILTER_FIELD=production_countries
-      - FILTER_VALUES=["Argentina", "Spain"]
-      - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
-      - INPUT_QUEUES=[("movies_q1", "movies")]
-      - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina", "Spain"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
+    - INPUT_QUEUES=[("movies_q1", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
+    - CLUSTER_SIZE=3
+    - ID=1
     networks:
-      - testing_net
-
-  movies_filter_released_between_2000_2009:
-    container_name: movies_filter_released_between_2000_2009
+    - testing_net
+  movies_filter_produced_in_argentina_and_spain_2:
+    container_name: movies_filter_produced_in_argentina_and_spain_2
     image: movies_filter:latest
     environment:
-      - PYTHONUNBUFFERED=1
-      - FILTER_FIELD=release_date
-      - FILTER_VALUES=(2000, 2009)
-      - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
-      - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
-      - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina", "Spain"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
+    - INPUT_QUEUES=[("movies_q1", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
+    - CLUSTER_SIZE=3
+    - ID=2
     networks:
-      - testing_net
-
+    - testing_net
+  movies_filter_produced_in_argentina_and_spain_3:
+    container_name: movies_filter_produced_in_argentina_and_spain_3
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina", "Spain"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
+    - INPUT_QUEUES=[("movies_q1", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
+    - CLUSTER_SIZE=3
+    - ID=3
+    networks:
+    - testing_net
+  movies_filter_released_between_2000_2009_1:
+    container_name: movies_filter_released_between_2000_2009_1
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=release_date
+    - FILTER_VALUES=(2000, 2009)
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
+    - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
+    - CLUSTER_SIZE=2
+    - ID=1
+    networks:
+    - testing_net
+  movies_filter_released_between_2000_2009_2:
+    container_name: movies_filter_released_between_2000_2009_2
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=release_date
+    - FILTER_VALUES=(2000, 2009)
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
+    - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
+    - CLUSTER_SIZE=2
+    - ID=2
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:
       driver: default
       config:
-        - subnet: 172.25.125.0/24
+      - subnet: 172.25.125.0/24

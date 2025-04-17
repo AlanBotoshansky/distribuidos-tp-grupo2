@@ -29,6 +29,8 @@ def initialize_config():
         config_params["output_fields_subset"] = ast.literal_eval(os.getenv('OUTPUT_FIELDS_SUBSET'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
+        config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
+        config_params["id"] = os.getenv('ID')
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -57,6 +59,8 @@ def main():
     output_fields_subset = config_params["output_fields_subset"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
+    cluster_size = config_params["cluster_size"]
+    id = config_params["id"]
     
     initialize_log(logging_level)
 
@@ -64,7 +68,7 @@ def main():
     # of the component
     logging.debug(f"action: config | result: success | logging_level: {logging_level} | filter_field: {filter_field} | filter_values: {filter_values} | output_fields_subset: {output_fields_subset} | input_queues: {input_queues} | output_exchange: {output_exchange}")
 
-    movies_filter = MoviesFilter(filter_field, filter_values, output_fields_subset, input_queues, output_exchange)
+    movies_filter = MoviesFilter(filter_field, filter_values, output_fields_subset, input_queues, output_exchange, cluster_size, id)
     movies_filter.run()
 
 if __name__ == "__main__":

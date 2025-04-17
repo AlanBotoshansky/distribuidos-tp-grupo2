@@ -1,7 +1,7 @@
 import signal
 import logging
 from middleware.middleware import Middleware
-from messages.movie import Movie
+from messages.eof import EOF
 from messages.packet_deserializer import PacketDeserializer
 from messages.packet_type import PacketType
 
@@ -9,12 +9,14 @@ PRODUCTION_COUNTRIES_FIELD = 'production_countries'
 RELEASE_DATE_FIELD = 'release_date'
 
 class MoviesFilter:
-    def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange):
+    def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange, cluster_size, id):
         self._filter_field = filter_field
         self._filter_values = filter_values
         self._output_fields_subset = output_fields_subset
         self._input_queues = input_queues
         self._output_exchange = output_exchange
+        self._cluster_size = cluster_size
+        self._id = id
         self._middleware = None
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
@@ -62,7 +64,11 @@ class MoviesFilter:
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             logging.info("action: eof_received | result: success")
-            self._middleware.send_message(eof.serialize())
+            eof.add_seen_id(self._id)
+            if len(eof.seen_ids) == self._cluster_size:
+                self._middleware.send_message(EOF().serialize())
+            else:
+                self._middleware.reenqueue_message(eof.serialize())
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

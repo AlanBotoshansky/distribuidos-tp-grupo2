@@ -10,6 +10,6 @@ class PacketDeserializer:
         if packet_type == PacketType.MOVIE:
             return Movie.deserialize(payload)
         elif packet_type == PacketType.EOF:
-            return EOF()
+            return EOF.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")

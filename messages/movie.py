@@ -7,8 +7,8 @@ from messages.packet_type import PacketType
 
 from messages.serialization import (
     LENGTH_FIELD, 
-    encode_packet_type, encode_string, encode_num, encode_list, encode_date,
-    decode_string, decode_int, decode_float, decode_list, decode_date
+    encode_packet_type, encode_string, encode_num, encode_strings_iterable, encode_date,
+    decode_string, decode_int, decode_float, decode_strings_list, decode_date
 )
 
 LENGTH_FIELD_TYPE = 1
@@ -75,7 +75,7 @@ class Movie:
             elif field_type in (FieldType.TITLE, FieldType.OVERVIEW):
                 encoded_field = encode_string(value)
             elif field_type in (FieldType.GENRES, FieldType.PRODUCTION_COUNTRIES):
-                encoded_field = encode_list(value)
+                encoded_field = encode_strings_iterable(value)
             elif field_type == FieldType.RELEASE_DATE:
                 encoded_field = encode_date(value)
 
@@ -88,8 +88,8 @@ class Movie:
         field_name_and_decoder = {
             FieldType.ID: ('id', decode_int),
             FieldType.TITLE: ('title', decode_string),
-            FieldType.GENRES: ('genres', decode_list),
-            FieldType.PRODUCTION_COUNTRIES: ('production_countries', decode_list),
+            FieldType.GENRES: ('genres', decode_strings_list),
+            FieldType.PRODUCTION_COUNTRIES: ('production_countries', decode_strings_list),
             FieldType.RELEASE_DATE: ('release_date', decode_date),
             FieldType.BUDGET: ('budget', decode_int),
             FieldType.OVERVIEW: ('overview', decode_string),

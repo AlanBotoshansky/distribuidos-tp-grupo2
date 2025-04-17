@@ -4,6 +4,7 @@ from configparser import ConfigParser
 from src.client import Client
 import logging
 import os
+from datetime import datetime
 
 
 def initialize_config():
@@ -71,7 +72,10 @@ def main():
     
     # Initialize client
     client = Client(server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path)
+    now = datetime.now()
     client.run()
+    elapsed_time = datetime.now() - now
+    logging.info(f"action: client | result: success | elapsed_time: {elapsed_time.total_seconds()} seconds")    
 
 if __name__ == "__main__":
     main()
