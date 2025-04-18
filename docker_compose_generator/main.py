@@ -13,6 +13,7 @@ def initialize_config():
     try:
         config_params["movies_filter_produced_in_argentina_and_spain"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_PRODUCED_IN_ARGENTINA_AND_SPAIN"])
         config_params["movies_filter_released_between_2000_2009"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_RELEASED_BETWEEN_2000_AND_2009"])
+        config_params["movies_filter_by_one_production_country"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_BY_ONE_PRODUCTION_COUNTRY"])
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
     except ValueError as e:

@@ -106,6 +106,48 @@ services:
     - ID=2
     networks:
     - testing_net
+  movies_filter_by_one_production_country_1:
+    container_name: movies_filter_by_one_production_country_1
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=1
+    - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
+    - INPUT_QUEUES=[("movies_q2", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_by_one_country
+    - CLUSTER_SIZE=3
+    - ID=1
+    networks:
+    - testing_net
+  movies_filter_by_one_production_country_2:
+    container_name: movies_filter_by_one_production_country_2
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=1
+    - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
+    - INPUT_QUEUES=[("movies_q2", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_by_one_country
+    - CLUSTER_SIZE=3
+    - ID=2
+    networks:
+    - testing_net
+  movies_filter_by_one_production_country_3:
+    container_name: movies_filter_by_one_production_country_3
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=1
+    - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
+    - INPUT_QUEUES=[("movies_q2", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_by_one_country
+    - CLUSTER_SIZE=3
+    - ID=3
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:

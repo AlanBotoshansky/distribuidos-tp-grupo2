@@ -41,10 +41,17 @@ class MoviesFilter:
             return False
         
         if self._filter_field == PRODUCTION_COUNTRIES_FIELD:
-            for country in self._filter_values:
-                if country not in movie.production_countries:
+            if isinstance(self._filter_values, int):
+                expected_amount_of_countries = self._filter_values
+                if len(movie.production_countries) != expected_amount_of_countries:
                     return False
-            return True
+                return True
+            else:
+                expected_countries = self._filter_values
+                for country in expected_countries:
+                    if country not in movie.production_countries:
+                        return False
+                return True
         
         if self._filter_field == RELEASE_DATE_FIELD:
             min_year, max_year = self._filter_values
@@ -63,10 +70,10 @@ class MoviesFilter:
                 self._middleware.send_message(movie.serialize(fields_subset=self._output_fields_subset))
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
-            logging.info("action: eof_received | result: success")
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
                 self._middleware.send_message(EOF().serialize())
+                logging.info("action: sent_eof | result: success")
             else:
                 self._middleware.reenqueue_message(eof.serialize())
         else:
