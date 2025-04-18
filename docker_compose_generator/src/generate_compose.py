@@ -98,7 +98,7 @@ def generate_results_handler():
         image="results_handler",
         environment=[
             "PYTHONUNBUFFERED=1",
-            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009")]'
+            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries", "top_investor_countries")]'
         ],
         volumes=[
             "./controllers/results_handler/config.ini:/config.ini"
@@ -166,6 +166,25 @@ def generate_movies_filter_by_one_country_cluster(cluster_size):
         input_queues='[("movies_q2", "movies")]',
         output_exchange="movies_produced_by_one_country"
     )
+    
+def generate_top_investor_countries_calculator():
+    """Generate the movies top investor countries calculator service configuration"""
+    return generate_service(
+        name="top_investor_countries_calculator",
+        image="top_investor_countries_calculator",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            "TOP_N_INVESTOR_COUNTRIES=5",
+            "INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]",
+            "OUTPUT_EXCHANGE=top_investor_countries"
+        ],
+        volumes=[
+            "./controllers/data_cleaner/config.ini:/config.ini"
+        ],
+        networks=[
+            "testing_net"
+        ]
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -213,5 +232,7 @@ def generate_docker_compose(config_params):
     docker_compose["services"].update(movies_filter_argentina_spain_cluster)
     docker_compose["services"].update(movies_filter_date_cluster)
     docker_compose["services"].update(movies_filter_by_one_country_cluster)
+    
+    docker_compose["services"]["top_investor_countries_calculator"] = generate_top_investor_countries_calculator()
     
     return docker_compose

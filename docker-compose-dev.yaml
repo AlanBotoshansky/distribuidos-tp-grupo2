@@ -16,7 +16,8 @@ services:
     environment:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009",
-      "movies_produced_in_argentina_and_spain_released_between_2000_2009")]
+      "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries",
+      "top_investor_countries")]
     volumes:
     - ./controllers/results_handler/config.ini:/config.ini
     networks:
@@ -146,6 +147,18 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
     - CLUSTER_SIZE=3
     - ID=3
+    networks:
+    - testing_net
+  top_investor_countries_calculator:
+    container_name: top_investor_countries_calculator
+    image: top_investor_countries_calculator:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - TOP_N_INVESTOR_COUNTRIES=5
+    - INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]
+    - OUTPUT_EXCHANGE=top_investor_countries
+    volumes:
+    - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
     - testing_net
 networks:

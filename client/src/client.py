@@ -3,6 +3,7 @@ import socket
 import signal
 import multiprocessing as mp
 import communication.communication as communication
+from datetime import datetime
 
 class Client:
     
@@ -58,18 +59,19 @@ class Client:
         # self._send_file(self._credits_path)
         # communication.send_message(self.data_socket, communication.EOF)
         
-    def _receive_results(self, results_socket):   
+    def _receive_results(self, results_socket): 
+        start_time = datetime.now()
         while True:
             try:
                 message = communication.receive_message(results_socket)
                 num_query, result = message.split(",", 1)
                 if result == communication.EOF:
-                    break
+                    logging.info(f"Query {num_query} resolved in {(datetime.now() - start_time).total_seconds()} seconds")
+                    continue
                 logging.info(f"Received result from query {num_query}: {result}")
             except OSError as e:
                 logging.error(f"Error while receiving results: {e}")
                 return
-        self.__close_socket(self.results_socket, "results_socket")
         
     def run(self):
         logging.info(f"Connecting to server at {self._server_ip_results}:{self._server_port_results}")
