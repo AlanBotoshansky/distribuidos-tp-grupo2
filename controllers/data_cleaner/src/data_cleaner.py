@@ -7,6 +7,7 @@ import communication.communication as communication
 from messages.movie import Movie, InvalidLineError
 from messages.eof import EOF
 from middleware.middleware import Middleware
+from src.data_sender import DataSender
 
 MOVIES_QUEUE_SIZE = 10000
 
@@ -46,11 +47,14 @@ class DataCleaner:
     def __cleanup(self):
         """
         Cleanup server resources during shutdown
-        """        
-        self._movies_queue.put(None)
-        if self._sender_process:
-            self._sender_process.join()
-            logging.info("action: sender_process_finished | result: success")
+        """
+        try:
+            logging.info('action: close_server_socket | result: in_progress')
+            self._server_socket.shutdown(socket.SHUT_RDWR)
+            self._server_socket.close()
+            logging.info('action: close_server_socket | result: success')
+        except OSError as e:
+            logging.error(f"action: close_server_socket | result: fail | error: {e}")   
         
         try:    
             logging.info("action: close_client_socket | result: in_progress") 
@@ -60,13 +64,10 @@ class DataCleaner:
         except OSError as e:
             logging.error(f"action: close_client_socket | result: fail | error: {e}")
         
-        try:
-            logging.info('action: close_server_socket | result: in_progress')
-            self._server_socket.shutdown(socket.SHUT_RDWR)
-            self._server_socket.close()
-            logging.info('action: close_server_socket | result: success')
-        except OSError as e:
-            logging.error(f"action: close_server_socket | result: fail | error: {e}")
+        if self._sender_process:
+            self._sender_process.terminate()
+            self._sender_process.join()
+            logging.info("action: sender_process_terminated | result: success")
 
     def __accept_new_connection(self):
         """
@@ -102,7 +103,6 @@ class DataCleaner:
             if self._cleaning_file == FileType.MOVIES:
                 logging.info(f'action: receive_message | result: success | msg: EOF_movies')
                 self._movies_queue.put(EOF())
-                self._movies_queue.put(None)
             self._cleaning_file = self._cleaning_file.next()
             return
         if self._cleaning_file == FileType.MOVIES:
@@ -114,14 +114,8 @@ class DataCleaner:
                 return
 
     def __send_movies(self):
-        middleware = Middleware(output_exchange=self._movies_exchange)
-        while not self._shutdown_requested:
-            msg = self._movies_queue.get()
-            if not msg:
-                logging.info("action: stop_sending | result: success")
-                middleware.close_connection()
-                return
-            middleware.send_message(msg.serialize())
+        data_sender = DataSender(self._movies_queue, self._movies_exchange)
+        data_sender.send_data()
     
     def run(self):
         """
@@ -132,7 +126,7 @@ class DataCleaner:
         finishes, servers starts to accept new connections again.
         The loop will continue until a SIGTERM signal is received.
         """
-        self._sender_process = mp.Process(target=self.__send_movies, daemon=True)
+        self._sender_process = mp.Process(target=self.__send_movies)
         self._sender_process.start()
         while not self._shutdown_requested:
             try:
