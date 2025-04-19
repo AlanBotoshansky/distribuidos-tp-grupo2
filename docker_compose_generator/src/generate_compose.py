@@ -118,7 +118,8 @@ def generate_data_cleaner():
         image="data_cleaner",
         environment=[
             "PYTHONUNBUFFERED=1",
-            "MOVIES_EXCHANGE=movies"
+            "MOVIES_EXCHANGE=movies",
+            "RATINGS_EXCHANGE=ratings"
         ],
         volumes=[
             "./controllers/data_cleaner/config.ini:/config.ini"

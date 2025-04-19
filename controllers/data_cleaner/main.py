@@ -26,6 +26,7 @@ def initialize_config():
         config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["movies_exchange"] = os.getenv('MOVIES_EXCHANGE')
+        config_params["ratings_exchange"] = os.getenv('RATINGS_EXCHANGE')
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -52,15 +53,16 @@ def main():
     listen_backlog = config_params["listen_backlog"]
     logging_level = config_params["logging_level"]
     movies_exchange = config_params["movies_exchange"]
+    ratings_exchange = config_params["ratings_exchange"]
 
     initialize_log(logging_level)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
     logging.debug(f"action: config | result: success | port: {port} | "
-                  f"listen_backlog: {listen_backlog} | logging_level: {logging_level} | movies_exchange: {movies_exchange}")
+                  f"listen_backlog: {listen_backlog} | logging_level: {logging_level} | movies_exchange: {movies_exchange} | ratings_exchange: {ratings_exchange}")
 
-    data_cleaner = DataCleaner(port, listen_backlog, movies_exchange)
+    data_cleaner = DataCleaner(port, listen_backlog, movies_exchange, ratings_exchange)
     data_cleaner.run()
 
 if __name__ == "__main__":

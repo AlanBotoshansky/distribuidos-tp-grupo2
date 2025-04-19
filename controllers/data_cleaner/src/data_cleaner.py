@@ -4,12 +4,13 @@ import signal
 from enum import IntEnum
 import multiprocessing as mp
 import communication.communication as communication
-from messages.movie import Movie, InvalidLineError
+from messages.exceptions import InvalidLineError
+from messages.movie import Movie
+from messages.rating import Rating
 from messages.eof import EOF
-from middleware.middleware import Middleware
 from src.data_sender import DataSender
 
-MOVIES_QUEUE_SIZE = 10000
+DATA_QUEUE_SIZE = 10000
 
 class FileType(IntEnum):
     MOVIES = 0
@@ -22,15 +23,16 @@ class FileType(IntEnum):
         return FileType(self.value + 1)
 
 class DataCleaner:
-    def __init__(self, port, listen_backlog, movies_exchange):
+    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._shutdown_requested = False
         self._client_sock = None
         self._cleaning_file = FileType.MOVIES
-        self._movies_queue = mp.Queue(maxsize=MOVIES_QUEUE_SIZE)
+        self._data_queue = mp.Queue(maxsize=DATA_QUEUE_SIZE)
         self._movies_exchange = movies_exchange
+        self._ratings_exchange = ratings_exchange
         self._sender_process = None
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
@@ -100,21 +102,27 @@ class DataCleaner:
             
     def __handle_client_message(self, msg):
         if msg == communication.EOF:
-            if self._cleaning_file == FileType.MOVIES:
-                logging.info(f'action: receive_message | result: success | msg: EOF_movies')
-                self._movies_queue.put(EOF())
+            self._data_queue.put(EOF())
             self._cleaning_file = self._cleaning_file.next()
             return
         if self._cleaning_file == FileType.MOVIES:
             try:
                 movie = Movie.from_csv_line(msg)
-                self._movies_queue.put(movie)
+                self._data_queue.put(movie)
             except InvalidLineError as e:
-                # logging.error(f"action: handle_message | result: fail | error: {e}")
+                logging.error(f"action: handle_message | result: fail | error: {e}")
+                return
+        elif self._cleaning_file == FileType.RATINGS:
+            try:
+                rating = Rating.from_csv_line(msg)
+                self._data_queue.put(rating)
+            except InvalidLineError as e:
+                logging.error(f"action: handle_message | result: fail | error: {e}")
                 return
 
-    def __send_movies(self):
-        data_sender = DataSender(self._movies_queue, self._movies_exchange)
+    def __send_data(self):
+        exchanges = [self._movies_exchange, self._ratings_exchange]
+        data_sender = DataSender(self._data_queue, exchanges)
         data_sender.send_data()
     
     def run(self):
@@ -126,7 +134,7 @@ class DataCleaner:
         finishes, servers starts to accept new connections again.
         The loop will continue until a SIGTERM signal is received.
         """
-        self._sender_process = mp.Process(target=self.__send_movies)
+        self._sender_process = mp.Process(target=self.__send_data)
         self._sender_process.start()
         while not self._shutdown_requested:
             try:

@@ -54,8 +54,9 @@ class Client:
         self._send_file(self._movies_path)
         communication.send_message(self.data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
-        # self._send_file(self._ratings_path)
-        # communication.send_message(self.data_socket, communication.EOF)
+        self._send_file(self._ratings_path)
+        communication.send_message(self.data_socket, communication.EOF)
+        logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
         # self._send_file(self._credits_path)
         # communication.send_message(self.data_socket, communication.EOF)
         

@@ -1,0 +1,2 @@
+class InvalidLineError(Exception):
+    pass

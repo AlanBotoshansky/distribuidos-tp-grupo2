@@ -3,6 +3,7 @@ from io import StringIO
 import csv
 import ast
 from datetime import datetime
+from messages.exceptions import InvalidLineError
 from messages.packet_type import PacketType
 
 from messages.serialization import (
@@ -14,9 +15,6 @@ from messages.serialization import (
 LENGTH_FIELD_TYPE = 1
 
 TOTAL_FIELDS_IN_CSV_LINE = 24
-
-class InvalidLineError(Exception):
-    pass
 
 class FieldType(IntEnum):
     ID = 1
@@ -178,7 +176,7 @@ class Movie:
         
     @classmethod
     def __parse_revenue(cls, revenue_str):
-        if not revenue_str.isdecimal():
+        if not revenue_str.replace('.', '', 1).isdecimal():
             raise InvalidLineError(f"Invalid revenue: {revenue_str}")
         return float(revenue_str)
     
