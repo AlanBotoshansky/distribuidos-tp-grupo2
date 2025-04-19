@@ -40,6 +40,12 @@ class Router:
         self._middleware.send_message(movie.serialize(), exchange=output_exchange)
         logging.debug(f"action: movie_routed | result: success | movie_id: {movie.id} | destination_id: {destination_id}")
         
+    def __route_rating(self, rating):
+        destination_id = self.__hash_id(rating.movie_id)
+        output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
+        self._middleware.send_message(rating.serialize(), exchange=output_exchange)
+        logging.debug(f"action: rating_routed | result: success | rating_movie_id: {rating.movie_id} | destination_id: {destination_id}")
+        
     def __send_eof_to_all_destination_nodes(self):
         for i in range(1, self.destination_nodes_amount + 1):
             output_exchange = f"{self._output_exchange_prefix}_{i}"
@@ -51,6 +57,9 @@ class Router:
         if msg.packet_type() == PacketType.MOVIE:
             movie = msg
             self.__route_movie(movie)
+        elif msg.packet_type() == PacketType.RATING:
+            rating = msg
+            self.__route_rating(rating)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             eof.add_seen_id(self._id)

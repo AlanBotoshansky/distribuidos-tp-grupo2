@@ -256,6 +256,30 @@ services:
     - ID=2
     networks:
     - testing_net
+  ratings_router_by_movie_id_1:
+    container_name: ratings_router_by_movie_id_1
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("ratings", "ratings")]
+    - OUTPUT_EXCHANGE_PREFIX=ratings
+    - CLUSTER_SIZE=2
+    - ID=1
+    networks:
+    - testing_net
+  ratings_router_by_movie_id_2:
+    container_name: ratings_router_by_movie_id_2
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("ratings", "ratings")]
+    - OUTPUT_EXCHANGE_PREFIX=ratings
+    - CLUSTER_SIZE=2
+    - ID=2
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:

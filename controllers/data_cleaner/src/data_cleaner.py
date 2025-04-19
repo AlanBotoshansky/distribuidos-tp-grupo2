@@ -110,14 +110,14 @@ class DataCleaner:
                 movie = Movie.from_csv_line(msg)
                 self._data_queue.put(movie)
             except InvalidLineError as e:
-                logging.error(f"action: handle_message | result: fail | error: {e}")
+                # logging.error(f"action: handle_message | result: fail | error: {e}")
                 return
         elif self._cleaning_file == FileType.RATINGS:
             try:
                 rating = Rating.from_csv_line(msg)
                 self._data_queue.put(rating)
             except InvalidLineError as e:
-                logging.error(f"action: handle_message | result: fail | error: {e}")
+                # logging.error(f"action: handle_message | result: fail | error: {e}")
                 return
 
     def __send_data(self):

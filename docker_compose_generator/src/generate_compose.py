@@ -257,6 +257,16 @@ def generate_movies_router_by_id_cluster(cluster_size, destination_nodes_amount)
         input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
         output_exchange_prefix="movies_produced_in_argentina_released_after_2000"
     )
+    
+def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
+    """Generate the ratings router services for routing by movie ID"""
+    return generate_routing_cluster(
+        cluster_size=cluster_size,
+        destination_nodes_amount=destination_nodes_amount,
+        service_prefix="ratings_router_by_movie_id",
+        input_queues='[("ratings", "ratings")]',
+        output_exchange_prefix="ratings"
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -320,5 +330,10 @@ def generate_docker_compose(config_params):
         config_params["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_router_by_id_cluster)
+    ratings_router_by_movie_id_cluster = generate_ratings_router_by_movie_id_cluster(
+        config_params["ratings_router_by_movie_id"],
+        config_params["movies_ratings_joiner"]
+    )
+    docker_compose["services"].update(ratings_router_by_movie_id_cluster)
     
     return docker_compose
