@@ -54,10 +54,16 @@ class MoviesFilter:
                 return True
         
         if self._filter_field == RELEASE_DATE_FIELD:
-            min_year, max_year = self._filter_values
-            if movie.release_date.year < min_year or movie.release_date.year > max_year:
-                return False
-            return True
+            if len(self._filter_values) == 2:
+                min_year, max_year = self._filter_values
+                if movie.release_date.year < min_year or movie.release_date.year > max_year:
+                    return False
+                return True
+            elif len(self._filter_values) == 1:
+                min_year = self._filter_values[0]
+                if movie.release_date.year < min_year:
+                    return False
+                return True
         
         return False
     

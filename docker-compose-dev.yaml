@@ -203,6 +203,34 @@ services:
     - ID=3
     networks:
     - testing_net
+  movies_filter_released_after_2000_1:
+    container_name: movies_filter_released_after_2000_1
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=release_date
+    - FILTER_VALUES=(2000,)
+    - OUTPUT_FIELDS_SUBSET=["id", "title"]
+    - INPUT_QUEUES=[("movies_produced_in_argentina", "movies_produced_in_argentina")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=1
+    networks:
+    - testing_net
+  movies_filter_released_after_2000_2:
+    container_name: movies_filter_released_after_2000_2
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=release_date
+    - FILTER_VALUES=(2000,)
+    - OUTPUT_FIELDS_SUBSET=["id", "title"]
+    - INPUT_QUEUES=[("movies_produced_in_argentina", "movies_produced_in_argentina")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=2
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:

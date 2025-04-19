@@ -143,8 +143,8 @@ def generate_movies_filter_argentina_spain_cluster(cluster_size):
         output_exchange="movies_produced_in_argentina_and_spain"
     )
 
-def generate_movies_filter_date_cluster(cluster_size):
-    """Generate the movies filter services for date range filtering"""
+def generate_movies_filter_date_2000_2009_cluster(cluster_size):
+    """Generate the movies filter services for filtering by release date between 2000 and 2009"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_filter_released_between_2000_2009",
@@ -198,6 +198,18 @@ def generate_movies_filter_argentina_cluster(cluster_size):
         output_exchange="movies_produced_in_argentina"
     )
 
+def generate_movies_filter_date_after_2000_cluster(cluster_size):
+    """Generate the movies filter services for filtering by release date after 2000"""
+    return generate_filter_cluster(
+        cluster_size=cluster_size,
+        service_prefix="movies_filter_released_after_2000",
+        filter_field="release_date",
+        filter_values="(2000,)",
+        output_fields_subset='["id", "title"]',
+        input_queues='[("movies_produced_in_argentina", "movies_produced_in_argentina")]',
+        output_exchange="movies_produced_in_argentina_released_after_2000"
+    )
+
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
     return {
@@ -234,11 +246,11 @@ def generate_docker_compose(config_params):
     movies_filter_argentina_spain_cluster = generate_movies_filter_argentina_spain_cluster(
         config_params["movies_filter_produced_in_argentina_and_spain"]
     )
-    movies_filter_date_cluster = generate_movies_filter_date_cluster(
+    movies_filter_date_2000_2009_cluster = generate_movies_filter_date_2000_2009_cluster(
         config_params["movies_filter_released_between_2000_2009"]
     )
     docker_compose["services"].update(movies_filter_argentina_spain_cluster)
-    docker_compose["services"].update(movies_filter_date_cluster)
+    docker_compose["services"].update(movies_filter_date_2000_2009_cluster)
     
     movies_filter_by_one_country_cluster = generate_movies_filter_by_one_country_cluster(
         config_params["movies_filter_by_one_production_country"]
@@ -250,5 +262,9 @@ def generate_docker_compose(config_params):
         config_params["movies_filter_produced_in_argentina"]
     )
     docker_compose["services"].update(movies_filter_argentina_cluster)
+    movies_filter_date_after_2000_cluster = generate_movies_filter_date_after_2000_cluster(
+        config_params["movies_filter_released_after_2000"]
+    )
+    docker_compose["services"].update(movies_filter_date_after_2000_cluster)
     
     return docker_compose
