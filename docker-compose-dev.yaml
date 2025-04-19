@@ -161,6 +161,48 @@ services:
     - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
     - testing_net
+  movies_filter_produced_in_argentina_1:
+    container_name: movies_filter_produced_in_argentina_1
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
+    - INPUT_QUEUES=[("movies_q3_q4", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina
+    - CLUSTER_SIZE=3
+    - ID=1
+    networks:
+    - testing_net
+  movies_filter_produced_in_argentina_2:
+    container_name: movies_filter_produced_in_argentina_2
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
+    - INPUT_QUEUES=[("movies_q3_q4", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina
+    - CLUSTER_SIZE=3
+    - ID=2
+    networks:
+    - testing_net
+  movies_filter_produced_in_argentina_3:
+    container_name: movies_filter_produced_in_argentina_3
+    image: movies_filter:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - FILTER_FIELD=production_countries
+    - FILTER_VALUES=["Argentina"]
+    - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
+    - INPUT_QUEUES=[("movies_q3_q4", "movies")]
+    - OUTPUT_EXCHANGE=movies_produced_in_argentina
+    - CLUSTER_SIZE=3
+    - ID=3
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:
