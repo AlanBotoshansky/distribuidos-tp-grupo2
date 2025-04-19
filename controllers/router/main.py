@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-from src.movies_filter import MoviesFilter
+from src.router import Router
 import logging
 import os
 import ast
@@ -24,11 +24,9 @@ def initialize_config():
     config_params = {}
     try:
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["filter_field"] = os.getenv('FILTER_FIELD')
-        config_params["filter_values"] = ast.literal_eval(os.getenv('FILTER_VALUES'))
-        config_params["output_fields_subset"] = ast.literal_eval(os.getenv('OUTPUT_FIELDS_SUBSET'))
+        config_params["destination_nodes_amount"] = int(os.getenv('DESTINATION_NODES_AMOUNT'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
-        config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
+        config_params["output_exchange_prefix"] = os.getenv('OUTPUT_EXCHANGE_PREFIX')
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
         config_params["id"] = os.getenv('ID')
     except KeyError as e:
@@ -54,11 +52,9 @@ def initialize_log(logging_level):
 def main():
     config_params = initialize_config()
     logging_level = config_params["logging_level"]
-    filter_field = config_params["filter_field"]
-    filter_values = config_params["filter_values"]
-    output_fields_subset = config_params["output_fields_subset"]
+    destination_nodes_amount = config_params["destination_nodes_amount"]
     input_queues = config_params["input_queues"]
-    output_exchange = config_params["output_exchange"]
+    output_exchange_prefix = config_params["output_exchange_prefix"]
     cluster_size = config_params["cluster_size"]
     id = config_params["id"]
     
@@ -66,10 +62,10 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | filter_field: {filter_field} | filter_values: {filter_values} | output_fields_subset: {output_fields_subset} | input_queues: {input_queues} | output_exchange: {output_exchange} | cluster_size: {cluster_size} | id: {id}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | destination_nodes_amount: {destination_nodes_amount} | input_queues: {input_queues} | output_exchange_prefix: {output_exchange_prefix} | cluster_size: {cluster_size} | id: {id}")
 
-    movies_filter = MoviesFilter(filter_field, filter_values, output_fields_subset, input_queues, output_exchange, cluster_size, id)
-    movies_filter.run()
+    router = Router(destination_nodes_amount, input_queues, output_exchange_prefix, cluster_size, id)
+    router.run()
 
 if __name__ == "__main__":
     main()

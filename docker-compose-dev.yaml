@@ -231,6 +231,30 @@ services:
     - ID=2
     networks:
     - testing_net
+  movies_router_by_id_1:
+    container_name: movies_router_by_id_1
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
+    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=1
+    networks:
+    - testing_net
+  movies_router_by_id_2:
+    container_name: movies_router_by_id_2
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
+    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=2
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:

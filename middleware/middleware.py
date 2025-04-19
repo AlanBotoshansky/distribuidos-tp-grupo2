@@ -39,8 +39,14 @@ class Middleware:
             return
         self._channel.exchange_declare(exchange=self._output_exchange, exchange_type=EXCHANGE_TYPE)
         
-    def send_message(self, msg):
-        self._channel.basic_publish(exchange=self._output_exchange, routing_key='', body=msg)
+    def send_message(self, msg, exchange=None):
+        if self._output_exchange is None and exchange is None:
+            return
+        if exchange is None:
+            self._channel.basic_publish(exchange=self._output_exchange, routing_key='', body=msg)
+        else:
+            self._channel.exchange_declare(exchange=exchange, exchange_type=EXCHANGE_TYPE)
+            self._channel.basic_publish(exchange=exchange, routing_key='', body=msg)
         
     def reenqueue_message(self, msg):
         for queue, _ in self._input_queues:

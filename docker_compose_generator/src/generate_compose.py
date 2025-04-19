@@ -74,6 +74,43 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
     
     return services
 
+def generate_routing_cluster(cluster_size, destination_nodes_amount, service_prefix, input_queues, output_exchange_prefix):
+    """
+    Generic function to generate a cluster of routing services
+    
+    Args:
+        cluster_size: Number of instances to create
+        destination_nodes_amount: Number of destination nodes
+        service_prefix: Prefix for the service names
+        input_queues: Input queues configuration
+        output_exchange_prefix: Output exchange prefix
+        
+    Returns:
+        Dictionary mapping service names to their configurations
+    """
+    services = {}
+    cluster_size = int(cluster_size)
+    
+    for i in range(1, cluster_size + 1):
+        service_name = f"{service_prefix}_{i}"
+        services[service_name] = generate_service(
+            name=service_name,
+            image="router",
+            environment=[
+                "PYTHONUNBUFFERED=1",
+                f"DESTINATION_NODES_AMOUNT={destination_nodes_amount}",
+                f"INPUT_QUEUES={input_queues}",
+                f"OUTPUT_EXCHANGE_PREFIX={output_exchange_prefix}",
+                f"CLUSTER_SIZE={cluster_size}",
+                f"ID={i}"
+            ],
+            networks=[
+                "testing_net"
+            ]
+        )
+    
+    return services
+
 def generate_data_cleaner():
     """Generate data_cleaner service configuration"""
     return generate_service(
@@ -209,6 +246,16 @@ def generate_movies_filter_date_after_2000_cluster(cluster_size):
         input_queues='[("movies_produced_in_argentina", "movies_produced_in_argentina")]',
         output_exchange="movies_produced_in_argentina_released_after_2000"
     )
+    
+def generate_movies_router_by_id_cluster(cluster_size, destination_nodes_amount):
+    """Generate the movies router services for routing by ID"""
+    return generate_routing_cluster(
+        cluster_size=cluster_size,
+        destination_nodes_amount=destination_nodes_amount,
+        service_prefix="movies_router_by_id",
+        input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
+        output_exchange_prefix="movies_produced_in_argentina_released_after_2000"
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -266,5 +313,11 @@ def generate_docker_compose(config_params):
         config_params["movies_filter_released_after_2000"]
     )
     docker_compose["services"].update(movies_filter_date_after_2000_cluster)
+    
+    movies_router_by_id_cluster = generate_movies_router_by_id_cluster(
+        config_params["movies_router_by_id"],
+        config_params["movies_ratings_joiner"]
+    )
+    docker_compose["services"].update(movies_router_by_id_cluster)
     
     return docker_compose

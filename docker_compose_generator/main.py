@@ -16,6 +16,8 @@ def initialize_config():
         config_params["movies_filter_by_one_production_country"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_BY_ONE_PRODUCTION_COUNTRY"])
         config_params["movies_filter_produced_in_argentina"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_PRODUCED_IN_ARGENTINA"])
         config_params["movies_filter_released_after_2000"] = int(config["CLUSTER_SIZES"]["MOVIES_FILTER_RELEASED_AFTER_2000"])
+        config_params["movies_router_by_id"] = int(config["CLUSTER_SIZES"]["MOVIES_ROUTER_BY_ID"])
+        config_params["movies_ratings_joiner"] = int(config["CLUSTER_SIZES"]["MOVIES_RATINGS_JOINER"])
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
     except ValueError as e:
