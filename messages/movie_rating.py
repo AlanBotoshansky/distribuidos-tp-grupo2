@@ -51,3 +51,6 @@ class MovieRating:
         offset += length_rating
 
         return cls(id, title, rating)
+    
+    def to_csv_line(self):
+        return f"{self.id},{self.title},{self.rating}"

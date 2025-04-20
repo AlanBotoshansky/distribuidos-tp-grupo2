@@ -18,7 +18,8 @@ services:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009",
       "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries",
-      "top_investor_countries")]
+      "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000",
+      "most_least_rated_movies_produced_in_argentina_released_after_2000")]
     volumes:
     - ./controllers/results_handler/config.ini:/config.ini
     networks:
