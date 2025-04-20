@@ -11,10 +11,13 @@ class RatingsBatch:
         self.ratings = ratings
 
     def __repr__(self):
-        f"RatingsBatch(amount_ratings={len(self.ratings)})"
+        return f"RatingsBatch(amount_ratings={len(self.ratings)})"
         
     def packet_type(self):
         return PacketType.RATINGS_BATCH
+    
+    def add_rating(self, rating: Rating):
+        self.ratings.append(rating)
     
     def serialize(self):
         payload = b""

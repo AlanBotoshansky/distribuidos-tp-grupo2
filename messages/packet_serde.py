@@ -6,6 +6,7 @@ from messages.investor_country import InvestorCountry
 from messages.rating import Rating
 from messages.movie_rating import MovieRating
 from messages.ratings_batch import RatingsBatch
+from messages.movie_ratings_batch import MovieRatingsBatch
 
 class PacketSerde:
     @classmethod
@@ -24,6 +25,8 @@ class PacketSerde:
             return MovieRating.deserialize(payload)
         elif packet_type == PacketType.RATINGS_BATCH:
             return RatingsBatch.deserialize(payload)
+        elif packet_type == PacketType.MOVIE_RATINGS_BATCH:
+            return MovieRatingsBatch.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")
     

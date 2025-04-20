@@ -30,11 +30,12 @@ class MostLeastRatedMoviesCalculator:
         self._middleware.stop_handling_messages()
         self._middleware.close_connection()
     
-    def __update_movie_ratings(self, movie_rating):
-        title, sum_ratings, cant_ratings = self._movie_ratings.get(movie_rating.id, (movie_rating.title, 0, 0))
-        sum_ratings += movie_rating.rating
-        cant_ratings += 1
-        self._movie_ratings[movie_rating.id] = (title, sum_ratings, cant_ratings)
+    def __update_movie_ratings(self, movie_ratings_batch):
+        for movie_rating in movie_ratings_batch.movie_ratings:
+            title, sum_ratings, cant_ratings = self._movie_ratings.get(movie_rating.id, (movie_rating.title, 0, 0))
+            sum_ratings += movie_rating.rating
+            cant_ratings += 1
+            self._movie_ratings[movie_rating.id] = (title, sum_ratings, cant_ratings)
     
     def __get_most_least_rated_movies(self):
         max_id = None
@@ -55,9 +56,9 @@ class MostLeastRatedMoviesCalculator:
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.MOVIE_RATING:
-            movie_rating = msg
-            self.__update_movie_ratings(movie_rating)
+        if msg.packet_type() == PacketType.MOVIE_RATINGS_BATCH:
+            movie_ratings_batch = msg
+            self.__update_movie_ratings(movie_ratings_batch)
         elif msg.packet_type() == PacketType.EOF:            
             for movie_rating in self.__get_most_least_rated_movies():
                 self._middleware.send_message(PacketSerde.serialize(movie_rating))

@@ -4,6 +4,7 @@ from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
+from messages.ratings_batch import RatingsBatch
 
 class Router:
     def __init__(self, destination_nodes_amount, input_queues, output_exchange_prefix, cluster_size, id):
@@ -41,11 +42,17 @@ class Router:
         logging.debug(f"action: movie_routed | result: success | movie_id: {movie.id} | destination_id: {destination_id}")
         
     def __route_ratings(self, ratings_batch):
+        ratings_batches = {}
         for rating in ratings_batch.ratings:
             destination_id = self.__hash_id(rating.movie_id)
+            destination_ratings_batch = ratings_batches.get(destination_id, RatingsBatch([]))
+            destination_ratings_batch.add_rating(rating)
+            ratings_batches[destination_id] = destination_ratings_batch
+
+        for destination_id, dest_ratings_batch in ratings_batches.items():
             output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
-            self._middleware.send_message(PacketSerde.serialize(rating), exchange=output_exchange)
-            logging.debug(f"action: rating_routed | result: success | rating_movie_id: {rating.movie_id} | destination_id: {destination_id}")
+            self._middleware.send_message(PacketSerde.serialize(dest_ratings_batch), exchange=output_exchange)
+            logging.debug(f"action: ratings_batch_routed | result: success | ratings_batch: {dest_ratings_batch} | destination_id: {destination_id}")
         
     def __send_eof_to_all_destination_nodes(self):
         for i in range(1, self.destination_nodes_amount + 1):

@@ -3,6 +3,7 @@ import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.movie_rating import MovieRating
+from messages.movie_ratings_batch import MovieRatingsBatch
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 
@@ -47,7 +48,7 @@ class MoviesRatingsJoiner:
         elif msg.packet_type() == PacketType.EOF:
             self._middleware.stop_handling_messages()
             self._middleware.close_connection()
-            self._middleware = Middleware(callback_function=self.__handle_rating_packet,
+            self._middleware = Middleware(callback_function=self.__handle_ratings_batch_packet,
                                           input_queues=[self._input_queue_ratings],
                                           output_exchange=self._output_exchange,
                                          )
@@ -55,16 +56,22 @@ class MoviesRatingsJoiner:
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
             
-    def __handle_rating_packet(self, packet):
-        msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.RATING:
-            rating = msg
+    def __join_ratings(self, ratings_batch):
+        movie_ratings_batch = MovieRatingsBatch([])
+        for rating in ratings_batch.ratings:
             if rating.movie_id not in self._movies:
-                return
+                continue
             movie_title = self._movies[rating.movie_id]
             movie_rating = MovieRating(rating.movie_id, movie_title, rating.rating)
-            logging.debug(f"action: rating_joined | result: success | movie_id: {rating.movie_id}") 
-            self._middleware.send_message(PacketSerde.serialize(movie_rating))
+            movie_ratings_batch.add_movie_rating(movie_rating)
+        self._middleware.send_message(PacketSerde.serialize(movie_ratings_batch))
+        logging.debug(f"action: ratings_batch_joined | result: success | movie_ratings_batch: {movie_ratings_batch}") 
+    
+    def __handle_ratings_batch_packet(self, packet):
+        msg = PacketSerde.deserialize(packet)
+        if msg.packet_type() == PacketType.RATINGS_BATCH:
+            ratings_batch = msg
+            self.__join_ratings(ratings_batch)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             eof.add_seen_id(self._id)
