@@ -3,7 +3,7 @@ import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.movie_rating import MovieRating
-from messages.packet_deserializer import PacketDeserializer
+from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 
 class MoviesRatingsJoiner:
@@ -40,7 +40,7 @@ class MoviesRatingsJoiner:
         return (int(self._id) % self._cluster_size) + 1
     
     def __handle_movie_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE:
             movie = msg
             self._movies[movie.id] = movie.title
@@ -56,7 +56,7 @@ class MoviesRatingsJoiner:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
             
     def __handle_rating_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.RATING:
             rating = msg
             if rating.movie_id not in self._movies:
@@ -64,17 +64,17 @@ class MoviesRatingsJoiner:
             movie_title = self._movies[rating.movie_id]
             movie_rating = MovieRating(rating.movie_id, movie_title, rating.rating)
             logging.debug(f"action: rating_joined | result: success | movie_id: {rating.movie_id}") 
-            self._middleware.send_message(movie_rating.serialize())
+            self._middleware.send_message(PacketSerde.serialize(movie_rating))
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
                 if min(eof.seen_ids) == self._id:
-                    self._middleware.send_message(EOF().serialize())
+                    self._middleware.send_message(PacketSerde.serialize(EOF()))
                     logging.info("action: sent_eof | result: success")
             else:
                 exchange = "_".join(self._input_queue_ratings[1].split("_")[:-1] + [str(self.__next_id())])
-                self._middleware.send_message(eof.serialize(), exchange=exchange)
+                self._middleware.send_message(PacketSerde.serialize(eof), exchange=exchange)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

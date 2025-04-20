@@ -1,11 +1,8 @@
-from io import StringIO
-import csv
-from messages.exceptions import InvalidLineError
 from messages.packet_type import PacketType
 
 from messages.serialization import (
     LENGTH_FIELD, 
-    encode_packet_type, encode_num, encode_string,
+    encode_num, encode_string,
     decode_int, decode_string, decode_float,
 )
 
@@ -29,7 +26,7 @@ class MovieRating:
         payload += encode_string(self.title)
         payload += encode_num(self.rating)
 
-        return encode_packet_type(self.packet_type()) + payload
+        return payload
 
     @classmethod
     def deserialize(cls, payload: bytes):

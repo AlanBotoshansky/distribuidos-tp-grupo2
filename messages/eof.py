@@ -1,5 +1,5 @@
 from messages.packet_type import PacketType
-from messages.serialization import LENGTH_FIELD, encode_packet_type, encode_strings_iterable, decode_strings_set
+from messages.serialization import LENGTH_FIELD, encode_strings_iterable, decode_strings_set
 
 class EOF:
     def __init__(self, seen_ids=None):
@@ -12,7 +12,7 @@ class EOF:
         self.seen_ids.add(id)
     
     def serialize(self):
-        return encode_packet_type(self.packet_type()) + encode_strings_iterable(self.seen_ids)
+        return encode_strings_iterable(self.seen_ids)
 
     @classmethod
     def deserialize(cls, payload: bytes):

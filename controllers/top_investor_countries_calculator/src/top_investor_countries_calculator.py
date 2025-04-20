@@ -2,7 +2,7 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
-from messages.packet_deserializer import PacketDeserializer
+from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.investor_country import InvestorCountry
 
@@ -41,15 +41,15 @@ class TopInvestorCountriesCalculator:
         return top_investor_countries
     
     def __handle_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE:
             movie = msg
             self.__update_investments(movie)
         elif msg.packet_type() == PacketType.EOF:            
             for country, investment in self.__get_top_investor_countries():
                 investor_country = InvestorCountry(country, investment)
-                self._middleware.send_message(investor_country.serialize())
-            self._middleware.send_message(EOF().serialize())
+                self._middleware.send_message(PacketSerde.serialize(investor_country))
+            self._middleware.send_message(PacketSerde.serialize(EOF()))
             logging.info("action: sent_eof | result: success")
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")

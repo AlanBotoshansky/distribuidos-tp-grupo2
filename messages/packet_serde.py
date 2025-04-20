@@ -1,11 +1,12 @@
 from messages.packet_type import PacketType
+from messages.serialization import encode_packet_type
 from messages.movie import Movie
 from messages.eof import EOF
 from messages.investor_country import InvestorCountry
 from messages.rating import Rating
 from messages.movie_rating import MovieRating
 
-class PacketDeserializer:
+class PacketSerde:
     @classmethod
     def deserialize(cls, packet):
         packet_type = PacketType(packet[0])
@@ -22,3 +23,9 @@ class PacketDeserializer:
             return MovieRating.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")
+    
+    @classmethod
+    def serialize(self, msg, fields_subset=None):
+        if fields_subset and msg.packet_type() == PacketType.MOVIE:
+            return encode_packet_type(msg.packet_type()) + msg.serialize(fields_subset=fields_subset)
+        return encode_packet_type(msg.packet_type()) + msg.serialize()

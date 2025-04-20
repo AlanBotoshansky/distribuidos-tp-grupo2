@@ -1,7 +1,7 @@
 import signal
 import logging
 from middleware.middleware import Middleware
-from messages.packet_deserializer import PacketDeserializer
+from messages.packet_serde import PacketSerde
 
 class QueryResultsHandler:
     def __init__(self, num_query, input_queues, results_queue):
@@ -18,7 +18,7 @@ class QueryResultsHandler:
             self._middleware.close_connection()
             
     def __handle_result_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         msg_csv_line = msg.to_csv_line()
         result_csv_line = f"{self._num_query},{msg_csv_line}"
         self._results_queue.put(result_csv_line)

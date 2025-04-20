@@ -2,7 +2,7 @@ from messages.packet_type import PacketType
 
 from messages.serialization import (
     LENGTH_FIELD, 
-    encode_packet_type, encode_string, encode_num,
+    encode_string, encode_num,
     decode_string, decode_int,
 )
 
@@ -22,7 +22,7 @@ class InvestorCountry:
         payload += encode_string(self.country)
         payload += encode_num(self.investment)
 
-        return encode_packet_type(self.packet_type()) + payload
+        return payload
 
     @classmethod
     def deserialize(cls, payload: bytes):

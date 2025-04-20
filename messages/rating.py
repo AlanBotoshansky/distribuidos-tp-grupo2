@@ -5,7 +5,7 @@ from messages.packet_type import PacketType
 
 from messages.serialization import (
     LENGTH_FIELD, 
-    encode_packet_type, encode_num,
+    encode_num,
     decode_int, decode_float,
 )
 
@@ -27,7 +27,7 @@ class Rating:
         payload += encode_num(self.movie_id)
         payload += encode_num(self.rating)
 
-        return encode_packet_type(self.packet_type()) + payload
+        return payload
 
     @classmethod
     def deserialize(cls, payload: bytes):

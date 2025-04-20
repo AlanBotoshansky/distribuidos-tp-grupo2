@@ -2,7 +2,7 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
-from messages.packet_deserializer import PacketDeserializer
+from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 
 class Router:
@@ -37,23 +37,23 @@ class Router:
     def __route_movie(self, movie):
         destination_id = self.__hash_id(movie.id)
         output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
-        self._middleware.send_message(movie.serialize(), exchange=output_exchange)
+        self._middleware.send_message(PacketSerde.serialize(movie), exchange=output_exchange)
         logging.debug(f"action: movie_routed | result: success | movie_id: {movie.id} | destination_id: {destination_id}")
         
     def __route_rating(self, rating):
         destination_id = self.__hash_id(rating.movie_id)
         output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
-        self._middleware.send_message(rating.serialize(), exchange=output_exchange)
+        self._middleware.send_message(PacketSerde.serialize(rating), exchange=output_exchange)
         logging.debug(f"action: rating_routed | result: success | rating_movie_id: {rating.movie_id} | destination_id: {destination_id}")
         
     def __send_eof_to_all_destination_nodes(self):
         for i in range(1, self.destination_nodes_amount + 1):
             output_exchange = f"{self._output_exchange_prefix}_{i}"
-            self._middleware.send_message(EOF().serialize(), exchange=output_exchange)
+            self._middleware.send_message(PacketSerde.serialize(EOF()), exchange=output_exchange)
             logging.info(f"action: sent_eof | result: success | destination_id: {i}")
     
     def __handle_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE:
             movie = msg
             self.__route_movie(movie)
@@ -66,7 +66,7 @@ class Router:
             if len(eof.seen_ids) == self._cluster_size:
                 self.__send_eof_to_all_destination_nodes()
             else:
-                self._middleware.reenqueue_message(eof.serialize())
+                self._middleware.reenqueue_message(PacketSerde.serialize(eof))
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

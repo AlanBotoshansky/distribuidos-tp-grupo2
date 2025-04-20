@@ -8,7 +8,7 @@ from messages.packet_type import PacketType
 
 from messages.serialization import (
     LENGTH_FIELD, 
-    encode_packet_type, encode_string, encode_num, encode_strings_iterable, encode_date,
+    encode_string, encode_num, encode_strings_iterable, encode_date,
     decode_string, decode_int, decode_float, decode_strings_list, decode_date
 )
 
@@ -79,7 +79,7 @@ class Movie:
 
             payload += encoded_field_type + encoded_field
 
-        return encode_packet_type(self.packet_type()) + payload
+        return payload
 
     @classmethod
     def deserialize(cls, payload: bytes):

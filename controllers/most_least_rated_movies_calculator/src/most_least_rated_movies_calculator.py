@@ -2,7 +2,7 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
-from messages.packet_deserializer import PacketDeserializer
+from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movie_rating import MovieRating
 
@@ -54,15 +54,15 @@ class MostLeastRatedMoviesCalculator:
         return most_rated_movie, least_rated_movie
     
     def __handle_packet(self, packet):
-        msg = PacketDeserializer.deserialize(packet)
+        msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE_RATING:
             movie_rating = msg
             self.__update_movie_ratings(movie_rating)
         elif msg.packet_type() == PacketType.EOF:            
             for movie_rating in self.__get_most_least_rated_movies():
-                self._middleware.send_message(movie_rating.serialize())
+                self._middleware.send_message(PacketSerde.serialize(movie_rating))
                 logging.debug(f"action: sent_movie_rating | result: success | movie_rating: {movie_rating}")
-            self._middleware.send_message(EOF().serialize())
+            self._middleware.send_message(PacketSerde.serialize(EOF()))
             logging.info("action: sent_eof | result: success")
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
