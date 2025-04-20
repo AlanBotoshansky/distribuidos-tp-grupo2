@@ -280,6 +280,30 @@ services:
     - ID=2
     networks:
     - testing_net
+  movies_ratings_joiner_1:
+    container_name: movies_ratings_joiner_1
+    image: movies_ratings_joiner:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_1", "movies_produced_in_argentina_released_after_2000_1"),
+      ("ratings_1", "ratings_1")]
+    - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=1
+    networks:
+    - testing_net
+  movies_ratings_joiner_2:
+    container_name: movies_ratings_joiner_2
+    image: movies_ratings_joiner:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_2", "movies_produced_in_argentina_released_after_2000_2"),
+      ("ratings_2", "ratings_2")]
+    - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=2
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:

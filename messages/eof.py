@@ -6,7 +6,7 @@ class EOF:
         self.seen_ids = set() if not seen_ids else seen_ids
     
     def __repr__(self):
-        return 'EOF'
+        return f"EOF(seen_ids={self.seen_ids})"
     
     def add_seen_id(self, id):
         self.seen_ids.add(id)

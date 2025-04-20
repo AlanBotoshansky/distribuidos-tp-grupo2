@@ -3,6 +3,7 @@ from messages.movie import Movie
 from messages.eof import EOF
 from messages.investor_country import InvestorCountry
 from messages.rating import Rating
+from messages.movie_rating import MovieRating
 
 class PacketDeserializer:
     @classmethod
@@ -17,5 +18,7 @@ class PacketDeserializer:
             return InvestorCountry.deserialize(payload)
         elif packet_type == PacketType.RATING:
             return Rating.deserialize(payload)
+        elif packet_type == PacketType.MOVIE_RATING:
+            return MovieRating.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")

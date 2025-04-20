@@ -111,6 +111,42 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
     
     return services
 
+def generate_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes, output_exchange):
+    """
+    Generic function to generate a cluster of joiner services
+    
+    Args:
+        cluster_size: Number of instances to create
+        service_prefix: Prefix for the service names
+        input_queues_prefixes: List of input queues prefixes
+        output_exchange: Output exchange name
+        
+    Returns:
+        Dictionary mapping service names to their configurations
+    """
+    services = {}
+    cluster_size = int(cluster_size)
+    
+    for i in range(1, cluster_size + 1):
+        service_name = f"{service_prefix}_{i}"
+        input_queues = f"[{', '.join([f'("{prefix}_{i}", "{prefix}_{i}")' for prefix in input_queues_prefixes])}]"
+        services[service_name] = generate_service(
+            name=service_name,
+            image="movies_ratings_joiner",
+            environment=[
+                "PYTHONUNBUFFERED=1",
+                f"INPUT_QUEUES={input_queues}",
+                f"OUTPUT_EXCHANGE={output_exchange}",
+                f"CLUSTER_SIZE={cluster_size}",
+                f"ID={i}"
+            ],
+            networks=[
+                "testing_net"
+            ]
+        )
+    
+    return services
+
 def generate_data_cleaner():
     """Generate data_cleaner service configuration"""
     return generate_service(
@@ -267,6 +303,15 @@ def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_
         input_queues='[("ratings", "ratings")]',
         output_exchange_prefix="ratings"
     )
+    
+def generate_movies_ratings_joiner_cluster(cluster_size):
+    """Generate the movies ratings joiner services for joining movies and ratings"""
+    return generate_joiner_cluster(
+        cluster_size=cluster_size,
+        service_prefix="movies_ratings_joiner",
+        input_queues_prefixes=["movies_produced_in_argentina_released_after_2000", "ratings"],
+        output_exchange="ratings_movies_produced_in_argentina_released_after_2000"
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -335,5 +380,9 @@ def generate_docker_compose(config_params):
         config_params["movies_ratings_joiner"]
     )
     docker_compose["services"].update(ratings_router_by_movie_id_cluster)
+    movies_ratings_joiner_cluster = generate_movies_ratings_joiner_cluster(
+        config_params["movies_ratings_joiner"]
+    )
+    docker_compose["services"].update(movies_ratings_joiner_cluster)
     
     return docker_compose
