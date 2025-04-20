@@ -50,6 +50,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
     - CLUSTER_SIZE=3
     - ID=1
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_produced_in_argentina_and_spain_2:
@@ -64,6 +66,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
     - CLUSTER_SIZE=3
     - ID=2
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_produced_in_argentina_and_spain_3:
@@ -78,6 +82,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
     - CLUSTER_SIZE=3
     - ID=3
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_released_between_2000_2009_1:
@@ -92,6 +98,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
     - CLUSTER_SIZE=2
     - ID=1
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_released_between_2000_2009_2:
@@ -106,6 +114,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
     - CLUSTER_SIZE=2
     - ID=2
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_by_one_production_country_1:
@@ -120,6 +130,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
     - CLUSTER_SIZE=3
     - ID=1
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_by_one_production_country_2:
@@ -134,6 +146,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
     - CLUSTER_SIZE=3
     - ID=2
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_by_one_production_country_3:
@@ -148,6 +162,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
     - CLUSTER_SIZE=3
     - ID=3
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   top_investor_countries_calculator:
@@ -159,7 +175,7 @@ services:
     - INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]
     - OUTPUT_EXCHANGE=top_investor_countries
     volumes:
-    - ./controllers/data_cleaner/config.ini:/config.ini
+    - ./controllers/top_investor_countries_calculator/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_produced_in_argentina_1:
@@ -174,6 +190,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
     - CLUSTER_SIZE=3
     - ID=1
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_produced_in_argentina_2:
@@ -188,6 +206,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
     - CLUSTER_SIZE=3
     - ID=2
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_produced_in_argentina_3:
@@ -202,6 +222,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
     - CLUSTER_SIZE=3
     - ID=3
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_released_after_2000_1:
@@ -216,6 +238,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=1
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_filter_released_after_2000_2:
@@ -230,6 +254,8 @@ services:
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=2
+    volumes:
+    - ./controllers/movies_filter/config.ini:/config.ini
     networks:
     - testing_net
   movies_router_by_id_1:
@@ -242,6 +268,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=1
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
     networks:
     - testing_net
   movies_router_by_id_2:
@@ -254,6 +282,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=2
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
     networks:
     - testing_net
   ratings_router_by_movie_id_1:
@@ -266,6 +296,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIX=ratings
     - CLUSTER_SIZE=2
     - ID=1
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
     networks:
     - testing_net
   ratings_router_by_movie_id_2:
@@ -278,6 +310,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIX=ratings
     - CLUSTER_SIZE=2
     - ID=2
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
     networks:
     - testing_net
   movies_ratings_joiner_1:
@@ -290,6 +324,8 @@ services:
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=1
+    volumes:
+    - ./controllers/movies_ratings_joiner/config.ini:/config.ini
     networks:
     - testing_net
   movies_ratings_joiner_2:
@@ -302,6 +338,19 @@ services:
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
     - ID=2
+    volumes:
+    - ./controllers/movies_ratings_joiner/config.ini:/config.ini
+    networks:
+    - testing_net
+  most_least_rated_movies_calculator:
+    container_name: most_least_rated_movies_calculator
+    image: most_least_rated_movies_calculator:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]
+    - OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000
+    volumes:
+    - ./controllers/most_least_rated_movies_calculator/config.ini:/config.ini
     networks:
     - testing_net
 networks:

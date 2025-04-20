@@ -67,6 +67,9 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
                 f"CLUSTER_SIZE={cluster_size}",
                 f"ID={i}"
             ],
+            volumes=[
+                "./controllers/movies_filter/config.ini:/config.ini"
+            ],
             networks=[
                 "testing_net"
             ]
@@ -104,6 +107,9 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
                 f"CLUSTER_SIZE={cluster_size}",
                 f"ID={i}"
             ],
+            volumes=[
+                "./controllers/router/config.ini:/config.ini"
+            ],
             networks=[
                 "testing_net"
             ]
@@ -139,6 +145,9 @@ def generate_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes,
                 f"OUTPUT_EXCHANGE={output_exchange}",
                 f"CLUSTER_SIZE={cluster_size}",
                 f"ID={i}"
+            ],
+            volumes=[
+                "./controllers/movies_ratings_joiner/config.ini:/config.ini"
             ],
             networks=[
                 "testing_net"
@@ -253,7 +262,7 @@ def generate_top_investor_countries_calculator():
             "OUTPUT_EXCHANGE=top_investor_countries"
         ],
         volumes=[
-            "./controllers/data_cleaner/config.ini:/config.ini"
+            "./controllers/top_investor_countries_calculator/config.ini:/config.ini"
         ],
         networks=[
             "testing_net"
@@ -312,6 +321,24 @@ def generate_movies_ratings_joiner_cluster(cluster_size):
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000", "ratings"],
         output_exchange="ratings_movies_produced_in_argentina_released_after_2000"
     )
+    
+def generate_most_least_rated_movies_calculator():
+    """Generate the most and least rated movies calculator service configuration"""
+    return generate_service(
+        name="most_least_rated_movies_calculator",
+        image="most_least_rated_movies_calculator",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            "INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]",
+            "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000"
+        ],
+        volumes=[
+            "./controllers/most_least_rated_movies_calculator/config.ini:/config.ini"
+        ],
+        networks=[
+            "testing_net"
+        ]
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -346,21 +373,24 @@ def generate_docker_compose(config_params):
     docker_compose["services"]["results_handler"] = generate_results_handler()
     docker_compose["services"]["client"] = generate_client()
     
+    # Query 1
     movies_filter_argentina_spain_cluster = generate_movies_filter_argentina_spain_cluster(
         config_params["movies_filter_produced_in_argentina_and_spain"]
     )
+    docker_compose["services"].update(movies_filter_argentina_spain_cluster)
     movies_filter_date_2000_2009_cluster = generate_movies_filter_date_2000_2009_cluster(
         config_params["movies_filter_released_between_2000_2009"]
     )
-    docker_compose["services"].update(movies_filter_argentina_spain_cluster)
     docker_compose["services"].update(movies_filter_date_2000_2009_cluster)
     
+    # Query 2
     movies_filter_by_one_country_cluster = generate_movies_filter_by_one_country_cluster(
         config_params["movies_filter_by_one_production_country"]
     )
     docker_compose["services"].update(movies_filter_by_one_country_cluster)
     docker_compose["services"]["top_investor_countries_calculator"] = generate_top_investor_countries_calculator()
     
+    # Queries 3 and 4
     movies_filter_argentina_cluster = generate_movies_filter_argentina_cluster(
         config_params["movies_filter_produced_in_argentina"]
     )
@@ -369,12 +399,13 @@ def generate_docker_compose(config_params):
         config_params["movies_filter_released_after_2000"]
     )
     docker_compose["services"].update(movies_filter_date_after_2000_cluster)
-    
     movies_router_by_id_cluster = generate_movies_router_by_id_cluster(
         config_params["movies_router_by_id"],
         config_params["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_router_by_id_cluster)
+    
+    # Query 3
     ratings_router_by_movie_id_cluster = generate_ratings_router_by_movie_id_cluster(
         config_params["ratings_router_by_movie_id"],
         config_params["movies_ratings_joiner"]
@@ -384,5 +415,6 @@ def generate_docker_compose(config_params):
         config_params["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_ratings_joiner_cluster)
+    docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator() 
     
     return docker_compose

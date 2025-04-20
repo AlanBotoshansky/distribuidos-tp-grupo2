@@ -10,6 +10,7 @@ docker-image:
 	docker build -f ./controllers/top_investor_countries_calculator/Dockerfile -t "top_investor_countries_calculator:latest" .
 	docker build -f ./controllers/router/Dockerfile -t "router:latest" .
 	docker build -f ./controllers/movies_ratings_joiner/Dockerfile -t "movies_ratings_joiner:latest" .
+	docker build -f ./controllers/most_least_rated_movies_calculator/Dockerfile -t "most_least_rated_movies_calculator:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
 	# Execute this command from time to time to clean up intermediate stages generated 
 	# during client build (your hard drive will like this :) ). Don't left uncommented if you 
