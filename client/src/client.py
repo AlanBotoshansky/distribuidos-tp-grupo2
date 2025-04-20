@@ -7,7 +7,7 @@ from datetime import datetime
 
 class Client:
     
-    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path):
+    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, ratings_batch_max_size):
         self._server_ip_data = server_ip_data
         self._server_port_data = server_port_data
         self._server_ip_results = server_ip_results
@@ -15,6 +15,7 @@ class Client:
         self._movies_path = movies_path
         self._ratings_path = ratings_path
         self._credits_path = credits_path
+        self._ratings_batch_max_size = ratings_batch_max_size
         self.data_socket = None
         self.results_socket = None
         self.results_receiver = None
@@ -44,17 +45,24 @@ class Client:
             
         self.results_receiver.join()
     
-    def _send_file(self, file_path):
+    def _send_file(self, file_path, batch_max_size=1):
+        batch = []
         with open(file_path) as file:
             next(file)
             for line in file:
-                communication.send_message(self.data_socket, line.rstrip())
+                line = line.rstrip()
+                batch.append(line)
+                if len(batch) == batch_max_size:
+                    communication.send_batch_message(self.data_socket, batch)
+                    batch = []
+        if batch:
+            communication.send_batch_message(self.data_socket, batch)
 
     def _send_data(self):
         self._send_file(self._movies_path)
         communication.send_message(self.data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
-        self._send_file(self._ratings_path)
+        self._send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
         communication.send_message(self.data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
         # self._send_file(self._credits_path)

@@ -6,3 +6,4 @@ class PacketType(IntEnum):
     INVESTOR_COUNTRY = 3
     RATING = 4
     MOVIE_RATING = 5
+    RATINGS_BATCH = 6
