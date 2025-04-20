@@ -1,6 +1,9 @@
+import csv
+import io
+
 LENGTH_BYTES = 3
 EOF = 'EOF'
-BATCH_SEPARATOR = ';'
+LINES_SEPARATOR = ';'
 
 def send_message(socket, message):
     """Sends a message to the socket"""
@@ -9,9 +12,12 @@ def send_message(socket, message):
     length_bytes = length.to_bytes(LENGTH_BYTES, byteorder='big')
     socket.sendall(length_bytes + encoded_message)
     
-def send_batch_message(socket, batch):
-    """Sends a batch message to the socket"""
-    message = BATCH_SEPARATOR.join(batch)
+def send_lines(socket, lines):
+    """Sends a list of lines to the socket"""
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=LINES_SEPARATOR, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(lines)
+    message = output.getvalue().rstrip('\r\n')
     send_message(socket, message)
 
 def read_bytes(socket, length):
@@ -33,6 +39,13 @@ def receive_message(socket):
     message = read_bytes(socket, message_length)
     return message.decode('utf-8')
 
-def parse_batch_message(message):
-    """Parses a batch message into a list of messages"""
-    return message.split(BATCH_SEPARATOR)
+def parse_lines_message(message):
+    """Parses a message into a list of lines"""
+    input_data = io.StringIO(message)
+    reader = csv.reader(input_data, delimiter=LINES_SEPARATOR, quotechar='"')
+    return next(reader)
+
+def receive_lines_message(socket):
+    """Receives a message from the socket and parses it into a list of lines"""
+    message = receive_message(socket)
+    return parse_lines_message(message)

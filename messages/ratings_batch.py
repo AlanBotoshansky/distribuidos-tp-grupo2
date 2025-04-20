@@ -46,7 +46,7 @@ class RatingsBatch:
         return cls(ratings)
     
     @classmethod
-    def from_ratings_csv_lines(cls, lines: list[str]):
+    def from_csv_lines(cls, lines: list[str]):
         ratings = []
         for line in lines:
             rating = Rating.from_csv_line(line)

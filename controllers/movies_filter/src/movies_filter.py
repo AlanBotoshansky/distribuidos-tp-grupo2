@@ -4,6 +4,7 @@ from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
+from messages.movies_batch import MoviesBatch
 
 PRODUCTION_COUNTRIES_FIELD = 'production_countries'
 RELEASE_DATE_FIELD = 'release_date'
@@ -67,13 +68,22 @@ class MoviesFilter:
         
         return False
     
+    def __filter_movies(self, movies_batch):
+        filtered_movies = []
+        for movie in movies_batch.movies:
+            if self.__filter_movie(movie):
+                filtered_movies.append(movie)
+        
+        if filtered_movies:
+            filtered_movies_batch = MoviesBatch(filtered_movies)
+            self._middleware.send_message(PacketSerde.serialize(filtered_movies_batch, fields_subset=self._output_fields_subset))
+            logging.debug(f"action: movies_batch_filtered | result: success | filtered_movies_batch: {filtered_movies_batch}")
+    
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.MOVIE:
-            movie = msg
-            if self.__filter_movie(movie):
-                logging.debug(f"action: movie_filtered | result: success | movie_id: {movie.id}") 
-                self._middleware.send_message(PacketSerde.serialize(movie, fields_subset=self._output_fields_subset))
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            movies_batch = msg
+            self.__filter_movies(movies_batch)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             eof.add_seen_id(self._id)

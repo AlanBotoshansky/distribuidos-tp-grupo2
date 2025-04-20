@@ -31,9 +31,10 @@ class TopInvestorCountriesCalculator:
         self._middleware.stop_handling_messages()
         self._middleware.close_connection()
     
-    def __update_investments(self, movie):
-        for country in movie.production_countries:
-            self._investment_by_country[country] = self._investment_by_country.get(country, 0) + movie.budget
+    def __update_investments(self, movies_batch):
+        for movie in movies_batch.movies:
+            for country in movie.production_countries:
+                self._investment_by_country[country] = self._investment_by_country.get(country, 0) + movie.budget
     
     def __get_top_investor_countries(self):
         sorted_investments = sorted(self._investment_by_country.items(), key=lambda x: x[1], reverse=True)
@@ -42,9 +43,9 @@ class TopInvestorCountriesCalculator:
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.MOVIE:
-            movie = msg
-            self.__update_investments(movie)
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            movies_batch = msg
+            self.__update_investments(movies_batch)
         elif msg.packet_type() == PacketType.EOF:            
             for country, investment in self.__get_top_investor_countries():
                 investor_country = InvestorCountry(country, investment)

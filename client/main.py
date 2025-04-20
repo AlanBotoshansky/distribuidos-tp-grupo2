@@ -32,6 +32,7 @@ def initialize_config():
         config_params["movies_path"] = os.getenv('MOVIES_PATH', config["DEFAULT"]["MOVIES_PATH"])
         config_params["ratings_path"] = os.getenv('RATINGS_PATH', config["DEFAULT"]["RATINGS_PATH"])
         config_params["credits_path"] = os.getenv('CREDITS_PATH', config["DEFAULT"]["CREDITS_PATH"])
+        config_params["movies_batch_max_size"] = int(os.getenv('MOVIES_BATCH_MAX_SIZE', config["DEFAULT"]["MOVIES_BATCH_MAX_SIZE"]))
         config_params["ratings_batch_max_size"] = int(os.getenv('RATINGS_BATCH_MAX_SIZE', config["DEFAULT"]["RATINGS_BATCH_MAX_SIZE"]))
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting client".format(e))
@@ -63,6 +64,7 @@ def main():
     movies_path = config_params["movies_path"]
     ratings_path = config_params["ratings_path"]
     credits_path = config_params["credits_path"]
+    movies_batch_max_size = config_params["movies_batch_max_size"]
     ratings_batch_max_size = config_params["ratings_batch_max_size"]
 
     initialize_log(logging_level)
@@ -71,10 +73,10 @@ def main():
     # of the component
     logging.debug(f"action: config | result: success | server_ip_data: {server_ip_data} | server_port_data: {server_port_data} | "
                   f"server_ip_results: {server_ip_results} | server_port_results: {server_port_results} | logging_level: {logging_level} | "
-                  f"movies_path: {movies_path} | ratings_path: {ratings_path} | credits_path: {credits_path} | ratings_batch_max_size: {ratings_batch_max_size}")
+                  f"movies_path: {movies_path} | ratings_path: {ratings_path} | credits_path: {credits_path} | movies_batch_max_size: {movies_batch_max_size} | ratings_batch_max_size: {ratings_batch_max_size}")
     
     # Initialize client
-    client = Client(server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, ratings_batch_max_size)
+    client = Client(server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, movies_batch_max_size, ratings_batch_max_size)
     now = datetime.now()
     client.run()
     elapsed_time = datetime.now() - now

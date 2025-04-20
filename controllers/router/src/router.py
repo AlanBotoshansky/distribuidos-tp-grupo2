@@ -4,6 +4,7 @@ from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
+from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 
 class Router:
@@ -35,11 +36,18 @@ class Router:
     def __hash_id(self, id):
         return (id % self.destination_nodes_amount) + 1
     
-    def __route_movie(self, movie):
-        destination_id = self.__hash_id(movie.id)
-        output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
-        self._middleware.send_message(PacketSerde.serialize(movie), exchange=output_exchange)
-        logging.debug(f"action: movie_routed | result: success | movie_id: {movie.id} | destination_id: {destination_id}")
+    def __route_movies(self, movies_batch):
+        movies_batches = {}
+        for movie in movies_batch.movies:
+            destination_id = self.__hash_id(movie.id)
+            destination_movies_batch = movies_batches.get(destination_id, MoviesBatch([]))
+            destination_movies_batch.add_movie(movie)
+            movies_batches[destination_id] = destination_movies_batch
+        
+        for destination_id, dest_movies_batch in movies_batches.items():
+            output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
+            self._middleware.send_message(PacketSerde.serialize(dest_movies_batch), exchange=output_exchange)
+            logging.debug(f"action: movies_batch_routed | result: success | movies_batch: {dest_movies_batch} | destination_id: {destination_id}")
         
     def __route_ratings(self, ratings_batch):
         ratings_batches = {}
@@ -62,9 +70,9 @@ class Router:
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.MOVIE:
-            movie = msg
-            self.__route_movie(movie)
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            movies_batch = msg
+            self.__route_movies(movies_batch)
         elif msg.packet_type() == PacketType.RATINGS_BATCH:
             ratings_batch = msg
             self.__route_ratings(ratings_batch)

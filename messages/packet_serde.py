@@ -7,14 +7,15 @@ from messages.rating import Rating
 from messages.movie_rating import MovieRating
 from messages.ratings_batch import RatingsBatch
 from messages.movie_ratings_batch import MovieRatingsBatch
+from messages.movies_batch import MoviesBatch
 
 class PacketSerde:
     @classmethod
     def deserialize(cls, packet):
         packet_type = PacketType(packet[0])
         payload = packet[1:]
-        if packet_type == PacketType.MOVIE:
-            return Movie.deserialize(payload)
+        if packet_type == PacketType.MOVIES_BATCH:
+            return MoviesBatch.deserialize(payload)
         elif packet_type == PacketType.EOF:
             return EOF.deserialize(payload)
         elif packet_type == PacketType.INVESTOR_COUNTRY:
@@ -32,6 +33,6 @@ class PacketSerde:
     
     @classmethod
     def serialize(self, msg, fields_subset=None):
-        if fields_subset and msg.packet_type() == PacketType.MOVIE:
+        if fields_subset and msg.packet_type() == PacketType.MOVIES_BATCH:
             return encode_packet_type(msg.packet_type()) + msg.serialize(fields_subset=fields_subset)
         return encode_packet_type(msg.packet_type()) + msg.serialize()

@@ -73,12 +73,12 @@ class ResultsHandler:
     
     def __send_results(self, client_sock):
         while True:
-            result_csv_line = self._results_queue.get()
-            if not result_csv_line:
+            result = self._results_queue.get()
+            if not result:
                 logging.info("action: stop_sending | result: success")
                 return
             try:
-                communication.send_message(client_sock, result_csv_line)
+                communication.send_lines(client_sock, result)
             except OSError as e:
                 logging.error(f"action: send_results | result: fail | error: {e}")
                 break

@@ -5,7 +5,7 @@ from enum import IntEnum
 import multiprocessing as mp
 import communication.communication as communication
 from messages.exceptions import InvalidLineError
-from messages.movie import Movie
+from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.eof import EOF
 from src.data_sender import DataSender
@@ -107,15 +107,16 @@ class DataCleaner:
             return
         if self._cleaning_file == FileType.MOVIES:
             try:
-                movie = Movie.from_csv_line(msg)
-                self._data_queue.put(movie)
+                movies_csv_lines = communication.parse_lines_message(msg)
+                movies_batch = MoviesBatch.from_csv_lines(movies_csv_lines)
+                self._data_queue.put(movies_batch)
             except InvalidLineError as e:
                 # logging.error(f"action: handle_message | result: fail | error: {e}")
                 return
         elif self._cleaning_file == FileType.RATINGS:
             try:
-                ratings_csv_lines = communication.parse_batch_message(msg)
-                ratings_batch = RatingsBatch.from_ratings_csv_lines(ratings_csv_lines)
+                ratings_csv_lines = communication.parse_lines_message(msg)
+                ratings_batch = RatingsBatch.from_csv_lines(ratings_csv_lines)
                 self._data_queue.put(ratings_batch)
             except InvalidLineError as e:
                 # logging.error(f"action: handle_message | result: fail | error: {e}")

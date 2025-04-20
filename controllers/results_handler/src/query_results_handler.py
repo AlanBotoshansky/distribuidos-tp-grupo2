@@ -2,6 +2,7 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.packet_serde import PacketSerde
+from messages.packet_type import PacketType
 
 class QueryResultsHandler:
     def __init__(self, num_query, input_queues, results_queue):
@@ -19,9 +20,13 @@ class QueryResultsHandler:
             
     def __handle_result_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        msg_csv_line = msg.to_csv_line()
-        result_csv_line = f"{self._num_query},{msg_csv_line}"
-        self._results_queue.put(result_csv_line)
+        result = [self._num_query]
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            query_result = msg.to_csv_lines()
+        else:
+            query_result = [msg.to_csv_line()]
+        result.extend(query_result)
+        self._results_queue.put(result)
         
     def run(self):
         self._middleware.handle_messages()

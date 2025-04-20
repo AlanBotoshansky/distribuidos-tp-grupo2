@@ -40,11 +40,12 @@ class MoviesRatingsJoiner:
         """
         return (int(self._id) % self._cluster_size) + 1
     
-    def __handle_movie_packet(self, packet):
+    def __handle_movies_batch_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
-        if msg.packet_type() == PacketType.MOVIE:
-            movie = msg
-            self._movies[movie.id] = movie.title
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            movies_batch = msg
+            for movie in movies_batch.movies:
+                self._movies[movie.id] = movie.title
         elif msg.packet_type() == PacketType.EOF:
             self._middleware.stop_handling_messages()
             self._middleware.close_connection()
@@ -86,7 +87,7 @@ class MoviesRatingsJoiner:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
-        self._middleware = Middleware(callback_function=self.__handle_movie_packet,
+        self._middleware = Middleware(callback_function=self.__handle_movies_batch_packet,
                                       input_queues=[self._input_queue_movies],
                                      )
         self._middleware.handle_messages()
