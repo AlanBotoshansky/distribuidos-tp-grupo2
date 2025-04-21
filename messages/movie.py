@@ -1,4 +1,3 @@
-from enum import IntEnum
 from io import StringIO
 import csv
 import ast

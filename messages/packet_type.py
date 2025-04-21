@@ -8,3 +8,4 @@ class PacketType(IntEnum):
     MOVIE_RATING = 5
     MOVIE_RATINGS_BATCH = 6
     CREDITS_BATCH = 7
+    MOVIE_CREDITS_BATCH = 8

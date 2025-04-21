@@ -6,8 +6,6 @@ from messages.serialization import (
     decode_int, decode_string, decode_float,
 )
 
-TOTAL_FIELDS_IN_CSV_LINE = 4
-
 class MovieRating:
     def __init__(self, id, title, rating):
         self.id = id

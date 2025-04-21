@@ -1,12 +1,9 @@
 from io import StringIO
 import csv
 from messages.exceptions import InvalidLineError
-from messages.packet_type import PacketType
 
 from messages.serialization import (
-    LENGTH_FIELD, 
     encode_num,
-    decode_int, decode_float,
 )
 
 TOTAL_FIELDS_IN_CSV_LINE = 4

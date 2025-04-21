@@ -385,6 +385,34 @@ services:
     - ./controllers/router/config.ini:/config.ini
     networks:
     - testing_net
+  movies_credits_joiner_1:
+    container_name: movies_credits_joiner_1
+    image: movies_credits_joiner:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_1", "movies_produced_in_argentina_released_after_2000_q4_1"),
+      ("credits_1", "credits_1")]
+    - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=1
+    volumes:
+    - ./controllers/movies_credits_joiner/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_credits_joiner_2:
+    container_name: movies_credits_joiner_2
+    image: movies_credits_joiner:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_2", "movies_produced_in_argentina_released_after_2000_q4_2"),
+      ("credits_2", "credits_2")]
+    - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
+    - CLUSTER_SIZE=2
+    - ID=2
+    volumes:
+    - ./controllers/movies_credits_joiner/config.ini:/config.ini
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:
