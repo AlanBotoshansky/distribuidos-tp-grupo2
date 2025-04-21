@@ -182,7 +182,7 @@ def generate_results_handler():
         image="results_handler",
         environment=[
             "PYTHONUNBUFFERED=1",
-            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries", "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000", "most_least_rated_movies_produced_in_argentina_released_after_2000")]'
+            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries", "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000", "most_least_rated_movies_produced_in_argentina_released_after_2000"), ("top_actors_participation_movies_produced_in_argentina_released_after_2000", "top_actors_participation_movies_produced_in_argentina_released_after_2000")]'
         ],
         volumes=[
             "./controllers/results_handler/config.ini:/config.ini"
@@ -359,6 +359,25 @@ def generate_movies_credits_joiner_cluster(cluster_size):
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q4", "credits"],
         output_exchange="credits_movies_produced_in_argentina_released_after_2000"
     )
+    
+def generate_top_actors_participation_calculator():
+    """Generate the top actors participation calculator service configuration"""
+    return generate_service(
+        name="top_actors_participation_calculator",
+        image="top_actors_participation_calculator",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            "TOP_N_ACTORS_PARTICIPATION=10",
+            "INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]",
+            "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000"
+        ],
+        volumes=[
+            "./controllers/top_actors_participation_calculator/config.ini:/config.ini"
+        ],
+        networks=[
+            "testing_net"
+        ]
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -447,5 +466,6 @@ def generate_docker_compose(config_params):
         config_params["movies_credits_joiner"]
     )
     docker_compose["services"].update(movies_credits_joiner_cluster)
+    docker_compose["services"]["top_actors_participation_calculator"] = generate_top_actors_participation_calculator()
     
     return docker_compose

@@ -20,7 +20,8 @@ services:
     - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009",
       "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries",
       "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000",
-      "most_least_rated_movies_produced_in_argentina_released_after_2000")]
+      "most_least_rated_movies_produced_in_argentina_released_after_2000"), ("top_actors_participation_movies_produced_in_argentina_released_after_2000",
+      "top_actors_participation_movies_produced_in_argentina_released_after_2000")]
     volumes:
     - ./controllers/results_handler/config.ini:/config.ini
     networks:
@@ -411,6 +412,18 @@ services:
     - ID=2
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
+    networks:
+    - testing_net
+  top_actors_participation_calculator:
+    container_name: top_actors_participation_calculator
+    image: top_actors_participation_calculator:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - TOP_N_ACTORS_PARTICIPATION=10
+    - INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]
+    - OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000
+    volumes:
+    - ./controllers/top_actors_participation_calculator/config.ini:/config.ini
     networks:
     - testing_net
 networks:
