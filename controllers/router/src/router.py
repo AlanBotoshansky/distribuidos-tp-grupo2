@@ -6,6 +6,7 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
+from messages.credits_batch import CreditsBatch
 
 class Router:
     def __init__(self, destination_nodes_amount, input_queues, output_exchange_prefix, cluster_size, id):
@@ -61,6 +62,19 @@ class Router:
             output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
             self._middleware.send_message(PacketSerde.serialize(dest_ratings_batch), exchange=output_exchange)
             logging.debug(f"action: ratings_batch_routed | result: success | ratings_batch: {dest_ratings_batch} | destination_id: {destination_id}")
+            
+    def __route_credits(self, credits_batch):
+        credits_batches = {}
+        for credit in credits_batch.credits:
+            destination_id = self.__hash_id(credit.movie_id)
+            destination_credits_batch = credits_batches.get(destination_id, CreditsBatch([]))
+            destination_credits_batch.add_credit(credit)
+            credits_batches[destination_id] = destination_credits_batch
+
+        for destination_id, dest_credits_batch in credits_batches.items():
+            output_exchange = f"{self._output_exchange_prefix}_{destination_id}"
+            self._middleware.send_message(PacketSerde.serialize(dest_credits_batch), exchange=output_exchange)
+            logging.debug(f"action: credits_batch_routed | result: success | credits_batch: {dest_credits_batch} | destination_id: {destination_id}")
         
     def __send_eof_to_all_destination_nodes(self):
         for i in range(1, self.destination_nodes_amount + 1):
@@ -76,6 +90,9 @@ class Router:
         elif msg.packet_type() == PacketType.RATINGS_BATCH:
             ratings_batch = msg
             self.__route_ratings(ratings_batch)
+        elif msg.packet_type() == PacketType.CREDITS_BATCH:
+            credits_batch = msg
+            self.__route_credits(credits_batch)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             eof.add_seen_id(self._id)

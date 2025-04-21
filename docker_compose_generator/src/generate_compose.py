@@ -340,6 +340,16 @@ def generate_most_least_rated_movies_calculator():
             "testing_net"
         ]
     )
+    
+def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
+    """Generate the credits router services for routing by movie ID"""
+    return generate_routing_cluster(
+        cluster_size=cluster_size,
+        destination_nodes_amount=destination_nodes_amount,
+        service_prefix="credits_router_by_movie_id",
+        input_queues='[("credits", "credits")]',
+        output_exchange_prefix="credits"
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -416,6 +426,13 @@ def generate_docker_compose(config_params):
         config_params["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_ratings_joiner_cluster)
-    docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator() 
+    docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator()
+    
+    # Query 4
+    credits_router_by_movie_id_cluster = generate_credits_router_by_movie_id_cluster(
+        config_params["credits_router_by_movie_id"],
+        config_params["movies_ratings_joiner"]
+    )
+    docker_compose["services"].update(credits_router_by_movie_id_cluster)
     
     return docker_compose

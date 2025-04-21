@@ -355,6 +355,34 @@ services:
     - ./controllers/most_least_rated_movies_calculator/config.ini:/config.ini
     networks:
     - testing_net
+  credits_router_by_movie_id_1:
+    container_name: credits_router_by_movie_id_1
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("credits", "credits")]
+    - OUTPUT_EXCHANGE_PREFIX=credits
+    - CLUSTER_SIZE=2
+    - ID=1
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
+    networks:
+    - testing_net
+  credits_router_by_movie_id_2:
+    container_name: credits_router_by_movie_id_2
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=2
+    - INPUT_QUEUES=[("credits", "credits")]
+    - OUTPUT_EXCHANGE_PREFIX=credits
+    - CLUSTER_SIZE=2
+    - ID=2
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
+    networks:
+    - testing_net
 networks:
   testing_net:
     ipam:
