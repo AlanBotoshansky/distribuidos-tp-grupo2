@@ -32,8 +32,11 @@ class MoviesBatch:
     def packet_type(self):
         return PacketType.MOVIES_BATCH
     
-    def add_movie(self, movie: Movie):
-        self.movies.append(movie)
+    def add_item(self, item: Movie):
+        self.movies.append(item)
+        
+    def get_items(self):
+        return self.movies
     
     def serialize(self, fields_subset=None):
         field_type_and_encode_map = {

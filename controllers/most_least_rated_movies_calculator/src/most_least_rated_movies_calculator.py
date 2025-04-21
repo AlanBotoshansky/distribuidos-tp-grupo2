@@ -31,7 +31,7 @@ class MostLeastRatedMoviesCalculator:
         self._middleware.close_connection()
     
     def __update_movie_ratings(self, movie_ratings_batch):
-        for movie_rating in movie_ratings_batch.movie_ratings:
+        for movie_rating in movie_ratings_batch.get_items():
             title, sum_ratings, cant_ratings = self._movie_ratings.get(movie_rating.id, (movie_rating.title, 0, 0))
             sum_ratings += movie_rating.rating
             cant_ratings += 1

@@ -267,7 +267,8 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000_q3
+    - OUTPUT_EXCHANGE_PREFIXES=["movies_produced_in_argentina_released_after_2000_q3",
+      "movies_produced_in_argentina_released_after_2000_q4"]
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
@@ -281,7 +282,8 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000_q3
+    - OUTPUT_EXCHANGE_PREFIXES=["movies_produced_in_argentina_released_after_2000_q3",
+      "movies_produced_in_argentina_released_after_2000_q4"]
     - CLUSTER_SIZE=2
     - ID=2
     volumes:
@@ -295,7 +297,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("ratings", "ratings")]
-    - OUTPUT_EXCHANGE_PREFIX=ratings
+    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
@@ -309,7 +311,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("ratings", "ratings")]
-    - OUTPUT_EXCHANGE_PREFIX=ratings
+    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
     - CLUSTER_SIZE=2
     - ID=2
     volumes:
@@ -362,7 +364,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("credits", "credits")]
-    - OUTPUT_EXCHANGE_PREFIX=credits
+    - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
@@ -376,7 +378,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("credits", "credits")]
-    - OUTPUT_EXCHANGE_PREFIX=credits
+    - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
     - ID=2
     volumes:

@@ -77,7 +77,7 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
     
     return services
 
-def generate_routing_cluster(cluster_size, destination_nodes_amount, service_prefix, input_queues, output_exchange_prefix):
+def generate_routing_cluster(cluster_size, destination_nodes_amount, service_prefix, input_queues, output_exchange_prefixes):
     """
     Generic function to generate a cluster of routing services
     
@@ -103,7 +103,7 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
                 "PYTHONUNBUFFERED=1",
                 f"DESTINATION_NODES_AMOUNT={destination_nodes_amount}",
                 f"INPUT_QUEUES={input_queues}",
-                f"OUTPUT_EXCHANGE_PREFIX={output_exchange_prefix}",
+                f"OUTPUT_EXCHANGE_PREFIXES={output_exchange_prefixes}",
                 f"CLUSTER_SIZE={cluster_size}",
                 f"ID={i}"
             ],
@@ -301,7 +301,7 @@ def generate_movies_router_by_id_cluster(cluster_size, destination_nodes_amount)
         destination_nodes_amount=destination_nodes_amount,
         service_prefix="movies_router_by_id",
         input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
-        output_exchange_prefix="movies_produced_in_argentina_released_after_2000_q3"
+        output_exchange_prefixes='["movies_produced_in_argentina_released_after_2000_q3", "movies_produced_in_argentina_released_after_2000_q4"]'
     )
     
 def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
@@ -311,7 +311,7 @@ def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_
         destination_nodes_amount=destination_nodes_amount,
         service_prefix="ratings_router_by_movie_id",
         input_queues='[("ratings", "ratings")]',
-        output_exchange_prefix="ratings"
+        output_exchange_prefixes='["ratings"]'
     )
     
 def generate_movies_ratings_joiner_cluster(cluster_size):
@@ -348,7 +348,7 @@ def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_
         destination_nodes_amount=destination_nodes_amount,
         service_prefix="credits_router_by_movie_id",
         input_queues='[("credits", "credits")]',
-        output_exchange_prefix="credits"
+        output_exchange_prefixes='["credits"]'
     )
 
 def generate_network_config():

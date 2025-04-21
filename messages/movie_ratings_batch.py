@@ -16,8 +16,11 @@ class MovieRatingsBatch:
     def packet_type(self):
         return PacketType.MOVIE_RATINGS_BATCH
     
-    def add_movie_rating(self, movie_rating: MovieRating):
-        self.movie_ratings.append(movie_rating)
+    def add_item(self, item: MovieRating):
+        self.movie_ratings.append(item)
+        
+    def get_items(self):
+        return self.movie_ratings
     
     def serialize(self):
         payload = b""

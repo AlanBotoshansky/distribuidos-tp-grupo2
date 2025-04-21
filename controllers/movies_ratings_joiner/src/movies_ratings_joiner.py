@@ -44,7 +44,7 @@ class MoviesRatingsJoiner:
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
-            for movie in movies_batch.movies:
+            for movie in movies_batch.get_items():
                 self._movies[movie.id] = movie.title
         elif msg.packet_type() == PacketType.EOF:
             self._middleware.stop_handling_messages()
@@ -59,12 +59,12 @@ class MoviesRatingsJoiner:
             
     def __join_ratings(self, ratings_batch):
         movie_ratings_batch = MovieRatingsBatch([])
-        for rating in ratings_batch.ratings:
+        for rating in ratings_batch.get_items():
             if rating.movie_id not in self._movies:
                 continue
             movie_title = self._movies[rating.movie_id]
             movie_rating = MovieRating(rating.movie_id, movie_title, rating.rating)
-            movie_ratings_batch.add_movie_rating(movie_rating)
+            movie_ratings_batch.add_item(movie_rating)
         self._middleware.send_message(PacketSerde.serialize(movie_ratings_batch))
         logging.debug(f"action: ratings_batch_joined | result: success | movie_ratings_batch: {movie_ratings_batch}") 
     

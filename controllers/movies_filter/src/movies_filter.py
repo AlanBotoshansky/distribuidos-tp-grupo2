@@ -70,7 +70,7 @@ class MoviesFilter:
     
     def __filter_movies(self, movies_batch):
         filtered_movies = []
-        for movie in movies_batch.movies:
+        for movie in movies_batch.get_items():
             if self.__filter_movie(movie):
                 filtered_movies.append(movie)
         

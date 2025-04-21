@@ -32,7 +32,7 @@ class TopInvestorCountriesCalculator:
         self._middleware.close_connection()
     
     def __update_investments(self, movies_batch):
-        for movie in movies_batch.movies:
+        for movie in movies_batch.get_items():
             for country in movie.production_countries:
                 self._investment_by_country[country] = self._investment_by_country.get(country, 0) + movie.budget
     

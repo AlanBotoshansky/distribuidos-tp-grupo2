@@ -16,8 +16,11 @@ class CreditsBatch:
     def packet_type(self):
         return PacketType.CREDITS_BATCH
     
-    def add_credit(self, credit: Credit):
-        self.credits.append(credit)
+    def add_item(self, item: Credit):
+        self.credits.append(item)
+        
+    def get_items(self):
+        return self.credits
     
     def serialize(self):
         payload = b""
