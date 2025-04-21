@@ -117,7 +117,7 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
     
     return services
 
-def generate_joiner_cluster(cluster_size, service_prefix, image, input_queues_prefixes, output_exchange):
+def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes, output_exchange):
     """
     Generic function to generate a cluster of joiner services
     
@@ -138,7 +138,7 @@ def generate_joiner_cluster(cluster_size, service_prefix, image, input_queues_pr
         input_queues = f"[{', '.join([f'("{prefix}_{i}", "{prefix}_{i}")' for prefix in input_queues_prefixes])}]"
         services[service_name] = generate_service(
             name=service_name,
-            image=image,
+            image='movies_joiner',
             environment=[
                 "PYTHONUNBUFFERED=1",
                 f"INPUT_QUEUES={input_queues}",
@@ -147,7 +147,7 @@ def generate_joiner_cluster(cluster_size, service_prefix, image, input_queues_pr
                 f"ID={i}"
             ],
             volumes=[
-                f"./controllers/{service_prefix}/config.ini:/config.ini"
+                f"./controllers/movies_joiner/config.ini:/config.ini"
             ],
             networks=[
                 "testing_net"
@@ -316,10 +316,9 @@ def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_
     
 def generate_movies_ratings_joiner_cluster(cluster_size):
     """Generate the movies ratings joiner services for joining movies and ratings"""
-    return generate_joiner_cluster(
+    return generate_movies_joiner_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_ratings_joiner",
-        image="movies_ratings_joiner",
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q3", "ratings"],
         output_exchange="ratings_movies_produced_in_argentina_released_after_2000"
     )
@@ -354,10 +353,9 @@ def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_
     
 def generate_movies_credits_joiner_cluster(cluster_size):
     """Generate the movies credits joiner services for joining movies and credits"""
-    return generate_joiner_cluster(
+    return generate_movies_joiner_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_credits_joiner",
-        image="movies_credits_joiner",
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q4", "credits"],
         output_exchange="credits_movies_produced_in_argentina_released_after_2000"
     )

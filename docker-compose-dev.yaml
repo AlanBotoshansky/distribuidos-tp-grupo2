@@ -320,7 +320,7 @@ services:
     - testing_net
   movies_ratings_joiner_1:
     container_name: movies_ratings_joiner_1
-    image: movies_ratings_joiner:latest
+    image: movies_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_1", "movies_produced_in_argentina_released_after_2000_q3_1"),
@@ -329,12 +329,12 @@ services:
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
-    - ./controllers/movies_ratings_joiner/config.ini:/config.ini
+    - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
     - testing_net
   movies_ratings_joiner_2:
     container_name: movies_ratings_joiner_2
-    image: movies_ratings_joiner:latest
+    image: movies_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_2", "movies_produced_in_argentina_released_after_2000_q3_2"),
@@ -343,7 +343,7 @@ services:
     - CLUSTER_SIZE=2
     - ID=2
     volumes:
-    - ./controllers/movies_ratings_joiner/config.ini:/config.ini
+    - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
     - testing_net
   most_least_rated_movies_calculator:
@@ -387,7 +387,7 @@ services:
     - testing_net
   movies_credits_joiner_1:
     container_name: movies_credits_joiner_1
-    image: movies_credits_joiner:latest
+    image: movies_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_1", "movies_produced_in_argentina_released_after_2000_q4_1"),
@@ -396,12 +396,12 @@ services:
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
-    - ./controllers/movies_credits_joiner/config.ini:/config.ini
+    - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
     - testing_net
   movies_credits_joiner_2:
     container_name: movies_credits_joiner_2
-    image: movies_credits_joiner:latest
+    image: movies_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_2", "movies_produced_in_argentina_released_after_2000_q4_2"),
@@ -410,7 +410,7 @@ services:
     - CLUSTER_SIZE=2
     - ID=2
     volumes:
-    - ./controllers/movies_credits_joiner/config.ini:/config.ini
+    - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
     - testing_net
 networks:

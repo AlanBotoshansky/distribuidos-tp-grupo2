@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-from src.movies_ratings_joiner import MoviesRatingsJoiner
+from src.movies_joiner import MoviesJoiner
 import logging
 import os
 import ast
@@ -62,8 +62,8 @@ def main():
     # of the component
     logging.debug(f"action: config | result: success | logging_level: {logging_level} | input_queues: {input_queues} | output_exchange: {output_exchange} | cluster_size: {cluster_size} | id: {id}")
 
-    movies_ratings_joiner = MoviesRatingsJoiner(input_queues, output_exchange, cluster_size, id)
-    movies_ratings_joiner.run()
+    movies_joiner = MoviesJoiner(input_queues, output_exchange, cluster_size, id)
+    movies_joiner.run()
 
 if __name__ == "__main__":
     main()
