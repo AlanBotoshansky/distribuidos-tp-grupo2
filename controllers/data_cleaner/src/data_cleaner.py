@@ -7,6 +7,7 @@ import communication.communication as communication
 from messages.exceptions import InvalidLineError
 from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
+from messages.credits_batch import CreditsBatch
 from messages.eof import EOF
 from src.data_sender import DataSender
 
@@ -23,7 +24,7 @@ class FileType(IntEnum):
         return FileType(self.value + 1)
 
 class DataCleaner:
-    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange):
+    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
@@ -33,6 +34,7 @@ class DataCleaner:
         self._data_queue = mp.Queue(maxsize=DATA_QUEUE_SIZE)
         self._movies_exchange = movies_exchange
         self._ratings_exchange = ratings_exchange
+        self._credits_exchange = credits_exchange
         self._sender_process = None
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
@@ -121,9 +123,17 @@ class DataCleaner:
             except InvalidLineError as e:
                 # logging.error(f"action: handle_message | result: fail | error: {e}")
                 return
+        elif self._cleaning_file == FileType.CREDITS:
+            try:
+                credits_csv_lines = communication.parse_lines_message(msg)
+                credits_batch = CreditsBatch.from_csv_lines(credits_csv_lines)
+                self._data_queue.put(credits_batch)
+            except InvalidLineError as e:
+                logging.error(f"action: handle_message | result: fail | error: {e}")
+                return
 
     def __send_data(self):
-        exchanges = [self._movies_exchange, self._ratings_exchange]
+        exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
         data_sender = DataSender(self._data_queue, exchanges)
         data_sender.send_data()
     

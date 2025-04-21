@@ -1,13 +1,12 @@
 from messages.packet_type import PacketType
 from messages.serialization import encode_packet_type
-from messages.movie import Movie
+from messages.movies_batch import MoviesBatch
 from messages.eof import EOF
 from messages.investor_country import InvestorCountry
-from messages.rating import Rating
-from messages.movie_rating import MovieRating
 from messages.ratings_batch import RatingsBatch
+from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
-from messages.movies_batch import MoviesBatch
+from messages.credits_batch import CreditsBatch
 
 class PacketSerde:
     @classmethod
@@ -20,14 +19,14 @@ class PacketSerde:
             return EOF.deserialize(payload)
         elif packet_type == PacketType.INVESTOR_COUNTRY:
             return InvestorCountry.deserialize(payload)
-        elif packet_type == PacketType.RATING:
-            return Rating.deserialize(payload)
-        elif packet_type == PacketType.MOVIE_RATING:
-            return MovieRating.deserialize(payload)
         elif packet_type == PacketType.RATINGS_BATCH:
             return RatingsBatch.deserialize(payload)
+        elif packet_type == PacketType.MOVIE_RATING:
+            return MovieRating.deserialize(payload)
         elif packet_type == PacketType.MOVIE_RATINGS_BATCH:
             return MovieRatingsBatch.deserialize(payload)
+        elif packet_type == PacketType.CREDITS_BATCH:
+            return CreditsBatch.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")
     

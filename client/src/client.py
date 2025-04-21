@@ -7,7 +7,7 @@ from datetime import datetime
 
 class Client:
     
-    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, movies_batch_max_size, ratings_batch_max_size):
+    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, movies_batch_max_size, ratings_batch_max_size, credits_batch_max_size):
         self._server_ip_data = server_ip_data
         self._server_port_data = server_port_data
         self._server_ip_results = server_ip_results
@@ -17,6 +17,7 @@ class Client:
         self._credits_path = credits_path
         self._movies_batch_max_size = movies_batch_max_size
         self._ratings_batch_max_size = ratings_batch_max_size
+        self._credits_batch_max_size = credits_batch_max_size
         self.data_socket = None
         self.results_socket = None
         self.results_receiver = None
@@ -66,8 +67,9 @@ class Client:
         self._send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
         communication.send_message(self.data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
-        # self._send_file(self._credits_path)
-        # communication.send_message(self.data_socket, communication.EOF)
+        self._send_file(self._credits_path, batch_max_size=self._credits_batch_max_size)
+        communication.send_message(self.data_socket, communication.EOF)
+        logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
         
     def _receive_results(self, results_socket): 
         start_time = datetime.now()

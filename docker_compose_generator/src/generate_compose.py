@@ -164,7 +164,8 @@ def generate_data_cleaner():
         environment=[
             "PYTHONUNBUFFERED=1",
             "MOVIES_EXCHANGE=movies",
-            "RATINGS_EXCHANGE=ratings"
+            "RATINGS_EXCHANGE=ratings",
+            "CREDITS_EXCHANGE=credits",
         ],
         volumes=[
             "./controllers/data_cleaner/config.ini:/config.ini"
@@ -300,7 +301,7 @@ def generate_movies_router_by_id_cluster(cluster_size, destination_nodes_amount)
         destination_nodes_amount=destination_nodes_amount,
         service_prefix="movies_router_by_id",
         input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
-        output_exchange_prefix="movies_produced_in_argentina_released_after_2000"
+        output_exchange_prefix="movies_produced_in_argentina_released_after_2000_q3"
     )
     
 def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
@@ -318,7 +319,7 @@ def generate_movies_ratings_joiner_cluster(cluster_size):
     return generate_joiner_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_ratings_joiner",
-        input_queues_prefixes=["movies_produced_in_argentina_released_after_2000", "ratings"],
+        input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q3", "ratings"],
         output_exchange="ratings_movies_produced_in_argentina_released_after_2000"
     )
     

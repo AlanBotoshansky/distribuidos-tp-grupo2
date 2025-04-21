@@ -7,6 +7,7 @@ services:
     - PYTHONUNBUFFERED=1
     - MOVIES_EXCHANGE=movies
     - RATINGS_EXCHANGE=ratings
+    - CREDITS_EXCHANGE=credits
     volumes:
     - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
@@ -266,7 +267,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
+    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000_q3
     - CLUSTER_SIZE=2
     - ID=1
     volumes:
@@ -280,7 +281,7 @@ services:
     - PYTHONUNBUFFERED=1
     - DESTINATION_NODES_AMOUNT=2
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000
+    - OUTPUT_EXCHANGE_PREFIX=movies_produced_in_argentina_released_after_2000_q3
     - CLUSTER_SIZE=2
     - ID=2
     volumes:
@@ -320,7 +321,7 @@ services:
     image: movies_ratings_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_1", "movies_produced_in_argentina_released_after_2000_1"),
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_1", "movies_produced_in_argentina_released_after_2000_q3_1"),
       ("ratings_1", "ratings_1")]
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2
@@ -334,7 +335,7 @@ services:
     image: movies_ratings_joiner:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_2", "movies_produced_in_argentina_released_after_2000_2"),
+    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_2", "movies_produced_in_argentina_released_after_2000_q3_2"),
       ("ratings_2", "ratings_2")]
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=2

@@ -1,28 +1,26 @@
 from io import StringIO
 import csv
+import ast
 from messages.exceptions import InvalidLineError
-from messages.packet_type import PacketType
 
 from messages.serialization import (
-    LENGTH_FIELD, 
-    encode_num,
-    decode_int, decode_float,
+    encode_num, encode_strings_iterable,
 )
 
-TOTAL_FIELDS_IN_CSV_LINE = 4
+TOTAL_FIELDS_IN_CSV_LINE = 3
 
-class Rating:
-    def __init__(self, movie_id, rating):
+class Credit:
+    def __init__(self, movie_id, cast):
         self.movie_id = movie_id
-        self.rating = rating
+        self.cast = cast
         
     def __repr__(self):
-        return f"Rating(movie_id={self.movie_id}, rating={self.rating})"
+        return f"Credit(movie_id={self.movie_id}, cast={self.cast})"
 
     def serialize(self):
         payload = b""
         payload += encode_num(self.movie_id)
-        payload += encode_num(self.rating)
+        payload += encode_strings_iterable(self.cast)
 
         return payload
     
@@ -34,10 +32,10 @@ class Rating:
         if len(fields) != TOTAL_FIELDS_IN_CSV_LINE:
             raise InvalidLineError(f"Invalid amount of line fields: {len(fields)}")
 
-        movie_id = cls.__parse_movie_id(fields[1])
-        rating = cls.__parse_rating(fields[2])
+        cast = cls.__parse_cast(fields[0])
+        movie_id = cls.__parse_movie_id(fields[2])
 
-        return cls(movie_id, rating)
+        return cls(movie_id, cast)
     
     @classmethod
     def __parse_movie_id(cls, movie_id_str):
@@ -46,7 +44,8 @@ class Rating:
         return int(movie_id_str)
         
     @classmethod
-    def __parse_rating(cls, rating_str):
-        if not rating_str.replace('.', '', 1).isdecimal():
-            raise InvalidLineError(f"Invalid rating: {rating_str}")
-        return float(rating_str)
+    def __parse_cast(cls, cast_str):
+        if not cast_str:
+            return []
+        cast_json = ast.literal_eval(cast_str)
+        return [c['name'] for c in cast_json]
