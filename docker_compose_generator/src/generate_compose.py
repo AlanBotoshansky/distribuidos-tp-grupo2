@@ -222,7 +222,7 @@ def generate_results_handler():
         image="results_handler",
         environment=[
             "PYTHONUNBUFFERED=1",
-            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries", "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000", "most_least_rated_movies_produced_in_argentina_released_after_2000"), ("top_actors_participation_movies_produced_in_argentina_released_after_2000", "top_actors_participation_movies_produced_in_argentina_released_after_2000")]'
+            'INPUT_QUEUES=[("movies_produced_in_argentina_and_spain_released_between_2000_2009", "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries", "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000", "most_least_rated_movies_produced_in_argentina_released_after_2000"), ("top_actors_participation_movies_produced_in_argentina_released_after_2000", "top_actors_participation_movies_produced_in_argentina_released_after_2000"), ("avg_rate_revenue_budget_by_sentiment", "avg_rate_revenue_budget_by_sentiment")]'
         ],
         volumes=[
             "./controllers/results_handler/config.ini:/config.ini"
@@ -428,6 +428,24 @@ def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size):
         input_queues='[("movies_q5", "movies")]',
         output_exchange="movies_sentiment_analyzed"
     )
+    
+def generate_avg_rate_revenue_budget_calculator():
+    """Generate the average rate revenue budget calculator service configuration"""
+    return generate_service(
+        name="avg_rate_revenue_budget_calculator",
+        image="avg_rate_revenue_budget_calculator",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            "INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]",
+            "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment"
+        ],
+        volumes=[
+            "./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini"
+        ],
+        networks=[
+            "testing_net"
+        ]
+    )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
@@ -523,5 +541,6 @@ def generate_docker_compose(config_params):
         config_params["movies_sentiment_analyzer"]
     )
     docker_compose["services"].update(movies_sentiment_analyzer_cluster)
+    docker_compose["services"]["avg_rate_revenue_budget_calculator"] = generate_avg_rate_revenue_budget_calculator()
     
     return docker_compose

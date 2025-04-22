@@ -21,7 +21,8 @@ services:
       "movies_produced_in_argentina_and_spain_released_between_2000_2009"), ("top_investor_countries",
       "top_investor_countries"), ("most_least_rated_movies_produced_in_argentina_released_after_2000",
       "most_least_rated_movies_produced_in_argentina_released_after_2000"), ("top_actors_participation_movies_produced_in_argentina_released_after_2000",
-      "top_actors_participation_movies_produced_in_argentina_released_after_2000")]
+      "top_actors_participation_movies_produced_in_argentina_released_after_2000"),
+      ("avg_rate_revenue_budget_by_sentiment", "avg_rate_revenue_budget_by_sentiment")]
     volumes:
     - ./controllers/results_handler/config.ini:/config.ini
     networks:
@@ -386,6 +387,17 @@ services:
     - ID=3
     volumes:
     - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
+    networks:
+    - testing_net
+  avg_rate_revenue_budget_calculator:
+    container_name: avg_rate_revenue_budget_calculator
+    image: avg_rate_revenue_budget_calculator:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]
+    - OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment
+    volumes:
+    - ./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini
     networks:
     - testing_net
 networks:
