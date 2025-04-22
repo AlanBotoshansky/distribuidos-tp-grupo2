@@ -25,7 +25,7 @@ class DataSender:
             if not msg:
                 logging.info("action: stop_sending | result: success")
                 break
-            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._output_exchanges[self._current_exchange_i])    
+            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._output_exchanges[self._current_exchange_i])
             if msg.packet_type() == PacketType.EOF:
                 self._current_exchange_i += 1
                 if self._current_exchange_i >= len(self._output_exchanges):

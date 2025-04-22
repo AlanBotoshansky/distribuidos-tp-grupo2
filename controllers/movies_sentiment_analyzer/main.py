@@ -24,9 +24,7 @@ def initialize_config():
     config_params = {}
     try:
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["analysis_model"] = os.getenv('ANALYSIS_MODEL', config["DEFAULT"]["ANALYSIS_MODEL"])
         config_params["field_to_analyze"] = os.getenv('FIELD_TO_ANALYZE')
-        config_params["batch_size_model"] = int(os.getenv('BATCH_SIZE_MODEL', config["DEFAULT"]["BATCH_SIZE_MODEL"]))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
@@ -54,9 +52,7 @@ def initialize_log(logging_level):
 def main():
     config_params = initialize_config()
     logging_level = config_params["logging_level"]
-    analysis_model = config_params["analysis_model"]
     field_to_analyze = config_params["field_to_analyze"]
-    batch_size_model = config_params["batch_size_model"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
     cluster_size = config_params["cluster_size"]
@@ -66,9 +62,9 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | analysis_model: {analysis_model} | field_to_analyze: {field_to_analyze} | batch_size_model: {batch_size_model} | input_queues: {input_queues} | output_exchange: {output_exchange} | cluster_size: {cluster_size} | id: {id}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | field_to_analyze: {field_to_analyze} | input_queues: {input_queues} | output_exchange: {output_exchange} | cluster_size: {cluster_size} | id: {id}")
 
-    movies_sentiment_analyzer = MoviesSentimentAnalyzer(analysis_model, field_to_analyze, batch_size_model, input_queues, output_exchange, cluster_size, id)
+    movies_sentiment_analyzer = MoviesSentimentAnalyzer(field_to_analyze, input_queues, output_exchange, cluster_size, id)
     movies_sentiment_analyzer.run()
 
 if __name__ == "__main__":

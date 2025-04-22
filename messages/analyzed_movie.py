@@ -6,14 +6,12 @@ class Sentiment(IntEnum):
     POSITIVE = 1
 
     @classmethod
-    def from_label(cls, label: str):
-        normalized = label.upper()
-        if normalized == "POSITIVE":
-            return cls.POSITIVE
-        elif normalized == "NEGATIVE":
+    def from_polarity(cls, polarity: float):
+        if polarity < -1 or polarity > 1:
+            raise ValueError(f"Polarity must be between -1 and 1, got {polarity}")
+        if polarity < 0:
             return cls.NEGATIVE
-        else:
-            raise ValueError(f"Unexpected label: {label}")
+        return cls.POSITIVE
         
     def __repr__(self):
         if self == Sentiment.POSITIVE:
@@ -30,7 +28,7 @@ class AnalyzedMovie:
         self.sentiment = sentiment
         
     def __repr__(self):
-        return f"AnalyzedMovie(revenue={self.revenue}, budget={self.budget}, sentiment={self.sentiment})"
+        return f"AnalyzedMovie(revenue={self.revenue}, budget={self.budget}, sentiment={repr(self.sentiment)})"
     
     def serialize(self):
         payload = b""

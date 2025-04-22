@@ -156,16 +156,14 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
     
     return services
 
-def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, analysis_model, field_to_analyze, batch_size_model, input_queues, output_exchange):
+def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, field_to_analyze, input_queues, output_exchange):
     """
     Generic function to generate a cluster of sentiment analyzer services
     
     Args:
         cluster_size: Number of instances to create
         service_prefix: Prefix for the service names
-        analysis_model: Model to use for analysis
         field_to_analyze: Field to analyze
-        batch_size_model: Batch size for the model
         input_queues: Input queues configuration
         output_exchange: Output exchange name
         
@@ -182,9 +180,7 @@ def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, ana
             image="movies_sentiment_analyzer",
             environment=[
                 "PYTHONUNBUFFERED=1",
-                f"ANALYSIS_MODEL={analysis_model}",
                 f"FIELD_TO_ANALYZE={field_to_analyze}",
-                f"BATCH_SIZE_MODEL={batch_size_model}",
                 f"INPUT_QUEUES={input_queues}",
                 f"OUTPUT_EXCHANGE={output_exchange}",
                 f"CLUSTER_SIZE={cluster_size}",
@@ -428,9 +424,7 @@ def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size):
     return generate_movies_sentiment_analyzer_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_sentiment_analyzer",
-        analysis_model="philschmid/tiny-bert-sst2-distilled",
         field_to_analyze="overview",
-        batch_size_model=64,
         input_queues='[("movies_q5", "movies")]',
         output_exchange="movies_sentiment_analyzed"
     )

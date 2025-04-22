@@ -1,6 +1,6 @@
 import signal
 import logging
-from transformers import pipeline
+from textblob import TextBlob
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -12,10 +12,8 @@ ANALYSIS_TYPE = "sentiment-analysis"
 OVERVIEW_FIELD = 'overview'
 
 class MoviesSentimentAnalyzer:
-    def __init__(self, analysis_model, field_to_analyze, batch_size_model, input_queues, output_exchange, cluster_size, id):
-        self._analysis_model = analysis_model
+    def __init__(self, field_to_analyze, input_queues, output_exchange, cluster_size, id):
         self._field_to_analyze = field_to_analyze
-        self._batch_size_model = batch_size_model
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._cluster_size = cluster_size
@@ -42,17 +40,15 @@ class MoviesSentimentAnalyzer:
     
     def __analyze_movies(self, movies_batch):
         analyzed_movies = []
-        movies = movies_batch.get_items()
         if self._field_to_analyze == OVERVIEW_FIELD:
-            texts = [movie.overview for movie in movies]
+            get_text = lambda movie: movie.overview
         else:
             raise ValueError(f"Unknown field to analyze: {self._field_to_analyze}")
-    
-        results = self._analyzer(texts, batch_size=self._batch_size_model, truncation=True)
-        sentiments = [Sentiment.from_label(res['label']) for res in results]
         
-        for i, movie in enumerate(movies):
-            sentiment = sentiments[i]
+        for movie in movies_batch.get_items():
+            text = get_text(movie)
+            polarity = TextBlob(text).sentiment.polarity
+            sentiment = Sentiment.from_polarity(polarity)
             analyzed_movie = AnalyzedMovie(movie.revenue, movie.budget, sentiment)
             analyzed_movies.append(analyzed_movie)
         
@@ -85,6 +81,4 @@ class MoviesSentimentAnalyzer:
                                       input_queues=self._input_queues,
                                       output_exchange=self._output_exchange,
                                      )
-        self._analyzer = pipeline(ANALYSIS_TYPE, model=self._analysis_model)
-        logging.info(f"action: model_loaded | result: success | model: {self._analysis_model}")
         self._middleware.handle_messages()

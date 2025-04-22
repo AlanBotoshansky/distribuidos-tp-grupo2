@@ -351,12 +351,10 @@ services:
     image: movies_sentiment_analyzer:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
     - FIELD_TO_ANALYZE=overview
-    - BATCH_SIZE_MODEL=64
     - INPUT_QUEUES=[("movies_q5", "movies")]
     - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=5
+    - CLUSTER_SIZE=3
     - ID=1
     volumes:
     - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
@@ -367,12 +365,10 @@ services:
     image: movies_sentiment_analyzer:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
     - FIELD_TO_ANALYZE=overview
-    - BATCH_SIZE_MODEL=64
     - INPUT_QUEUES=[("movies_q5", "movies")]
     - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=5
+    - CLUSTER_SIZE=3
     - ID=2
     volumes:
     - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
@@ -383,45 +379,11 @@ services:
     image: movies_sentiment_analyzer:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
     - FIELD_TO_ANALYZE=overview
-    - BATCH_SIZE_MODEL=64
     - INPUT_QUEUES=[("movies_q5", "movies")]
     - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=5
+    - CLUSTER_SIZE=3
     - ID=3
-    volumes:
-    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_sentiment_analyzer_4:
-    container_name: movies_sentiment_analyzer_4
-    image: movies_sentiment_analyzer:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
-    - FIELD_TO_ANALYZE=overview
-    - BATCH_SIZE_MODEL=64
-    - INPUT_QUEUES=[("movies_q5", "movies")]
-    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=5
-    - ID=4
-    volumes:
-    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_sentiment_analyzer_5:
-    container_name: movies_sentiment_analyzer_5
-    image: movies_sentiment_analyzer:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
-    - FIELD_TO_ANALYZE=overview
-    - BATCH_SIZE_MODEL=64
-    - INPUT_QUEUES=[("movies_q5", "movies")]
-    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=5
-    - ID=5
     volumes:
     - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
     networks:
