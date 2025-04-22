@@ -51,7 +51,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
     - INPUT_QUEUES=[("movies_q1", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=1
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
@@ -67,24 +67,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
     - INPUT_QUEUES=[("movies_q1", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=2
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_produced_in_argentina_and_spain_3:
-    container_name: movies_filter_produced_in_argentina_and_spain_3
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=["Argentina", "Spain"]
-    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
-    - INPUT_QUEUES=[("movies_q1", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
-    - CLUSTER_SIZE=3
-    - ID=3
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -99,24 +83,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
     - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_released_between_2000_2009_2:
-    container_name: movies_filter_released_between_2000_2009_2
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=release_date
-    - FILTER_VALUES=(2000, 2009)
-    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
-    - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -131,7 +99,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
     - INPUT_QUEUES=[("movies_q2", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=1
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
@@ -147,24 +115,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
     - INPUT_QUEUES=[("movies_q2", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=2
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_by_one_production_country_3:
-    container_name: movies_filter_by_one_production_country_3
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=1
-    - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
-    - INPUT_QUEUES=[("movies_q2", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_by_one_country
-    - CLUSTER_SIZE=3
-    - ID=3
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -191,7 +143,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
     - INPUT_QUEUES=[("movies_q3_q4", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=1
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
@@ -207,24 +159,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
     - INPUT_QUEUES=[("movies_q3_q4", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=2
     - ID=2
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_produced_in_argentina_3:
-    container_name: movies_filter_produced_in_argentina_3
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=["Argentina"]
-    - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
-    - INPUT_QUEUES=[("movies_q3_q4", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina
-    - CLUSTER_SIZE=3
-    - ID=3
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -239,24 +175,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title"]
     - INPUT_QUEUES=[("movies_produced_in_argentina", "movies_produced_in_argentina")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_released_after_2000_2:
-    container_name: movies_filter_released_after_2000_2
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=release_date
-    - FILTER_VALUES=(2000,)
-    - OUTPUT_FIELDS_SUBSET=["id", "title"]
-    - INPUT_QUEUES=[("movies_produced_in_argentina", "movies_produced_in_argentina")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -424,6 +344,86 @@ services:
     - OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000
     volumes:
     - ./controllers/top_actors_participation_calculator/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_sentiment_analyzer_1:
+    container_name: movies_sentiment_analyzer_1
+    image: movies_sentiment_analyzer:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
+    - FIELD_TO_ANALYZE=overview
+    - BATCH_SIZE_MODEL=64
+    - INPUT_QUEUES=[("movies_q5", "movies")]
+    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - CLUSTER_SIZE=5
+    - ID=1
+    volumes:
+    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_sentiment_analyzer_2:
+    container_name: movies_sentiment_analyzer_2
+    image: movies_sentiment_analyzer:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
+    - FIELD_TO_ANALYZE=overview
+    - BATCH_SIZE_MODEL=64
+    - INPUT_QUEUES=[("movies_q5", "movies")]
+    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - CLUSTER_SIZE=5
+    - ID=2
+    volumes:
+    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_sentiment_analyzer_3:
+    container_name: movies_sentiment_analyzer_3
+    image: movies_sentiment_analyzer:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
+    - FIELD_TO_ANALYZE=overview
+    - BATCH_SIZE_MODEL=64
+    - INPUT_QUEUES=[("movies_q5", "movies")]
+    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - CLUSTER_SIZE=5
+    - ID=3
+    volumes:
+    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_sentiment_analyzer_4:
+    container_name: movies_sentiment_analyzer_4
+    image: movies_sentiment_analyzer:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
+    - FIELD_TO_ANALYZE=overview
+    - BATCH_SIZE_MODEL=64
+    - INPUT_QUEUES=[("movies_q5", "movies")]
+    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - CLUSTER_SIZE=5
+    - ID=4
+    volumes:
+    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
+    networks:
+    - testing_net
+  movies_sentiment_analyzer_5:
+    container_name: movies_sentiment_analyzer_5
+    image: movies_sentiment_analyzer:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - ANALYSIS_MODEL=philschmid/tiny-bert-sst2-distilled
+    - FIELD_TO_ANALYZE=overview
+    - BATCH_SIZE_MODEL=64
+    - INPUT_QUEUES=[("movies_q5", "movies")]
+    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - CLUSTER_SIZE=5
+    - ID=5
+    volumes:
+    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
     networks:
     - testing_net
 networks:

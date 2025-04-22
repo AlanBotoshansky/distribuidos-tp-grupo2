@@ -1,0 +1,90 @@
+import signal
+import logging
+from transformers import pipeline
+from middleware.middleware import Middleware
+from messages.eof import EOF
+from messages.packet_serde import PacketSerde
+from messages.packet_type import PacketType
+from messages.analyzed_movie import Sentiment, AnalyzedMovie
+from messages.analyzed_movies_batch import AnalyzedMoviesBatch
+
+ANALYSIS_TYPE = "sentiment-analysis"
+OVERVIEW_FIELD = 'overview'
+
+class MoviesSentimentAnalyzer:
+    def __init__(self, analysis_model, field_to_analyze, batch_size_model, input_queues, output_exchange, cluster_size, id):
+        self._analysis_model = analysis_model
+        self._field_to_analyze = field_to_analyze
+        self._batch_size_model = batch_size_model
+        self._input_queues = input_queues
+        self._output_exchange = output_exchange
+        self._cluster_size = cluster_size
+        self._id = id
+        self._analyzer = None
+        self._middleware = None
+        
+        signal.signal(signal.SIGTERM, self.__handle_signal)
+
+    def __handle_signal(self, signalnum, frame):
+        """
+        Signal handler for graceful shutdown
+        """
+        if signalnum == signal.SIGTERM:
+            logging.info('action: signal_received | result: success | signal: SIGTERM')
+            self.__cleanup()
+            
+    def __cleanup(self):
+        """
+        Cleanup resources during shutdown
+        """
+        self._middleware.stop_handling_messages()
+        self._middleware.close_connection()
+    
+    def __analyze_movies(self, movies_batch):
+        analyzed_movies = []
+        movies = movies_batch.get_items()
+        if self._field_to_analyze == OVERVIEW_FIELD:
+            texts = [movie.overview for movie in movies]
+        else:
+            raise ValueError(f"Unknown field to analyze: {self._field_to_analyze}")
+    
+        results = self._analyzer(texts, batch_size=self._batch_size_model, truncation=True)
+        sentiments = [Sentiment.from_label(res['label']) for res in results]
+        
+        for i, movie in enumerate(movies):
+            sentiment = sentiments[i]
+            analyzed_movie = AnalyzedMovie(movie.revenue, movie.budget, sentiment)
+            analyzed_movies.append(analyzed_movie)
+        
+        return analyzed_movies
+    
+    def __analyze_movies_sentiment(self, movies_batch):
+        analyzed_movies = self.__analyze_movies(movies_batch)
+        analyzed_movies_batch = AnalyzedMoviesBatch(analyzed_movies)
+        self._middleware.send_message(PacketSerde.serialize(analyzed_movies_batch))
+        logging.debug(f"action: movies_batch_analyzed | result: success | analyzed_movies_batch: {analyzed_movies_batch}")
+    
+    def __handle_packet(self, packet):
+        msg = PacketSerde.deserialize(packet)
+        if msg.packet_type() == PacketType.MOVIES_BATCH:
+            movies_batch = msg
+            self.__analyze_movies_sentiment(movies_batch)
+        elif msg.packet_type() == PacketType.EOF:
+            eof = msg
+            eof.add_seen_id(self._id)
+            if len(eof.seen_ids) == self._cluster_size:
+                self._middleware.send_message(PacketSerde.serialize(EOF()))
+                logging.info("action: sent_eof | result: success")
+            else:
+                self._middleware.reenqueue_message(PacketSerde.serialize(eof))
+        else:
+            logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+
+    def run(self):
+        self._middleware = Middleware(callback_function=self.__handle_packet,
+                                      input_queues=self._input_queues,
+                                      output_exchange=self._output_exchange,
+                                     )
+        self._analyzer = pipeline(ANALYSIS_TYPE, model=self._analysis_model)
+        logging.info(f"action: model_loaded | result: success | model: {self._analysis_model}")
+        self._middleware.handle_messages()
