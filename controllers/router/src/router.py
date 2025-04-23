@@ -31,8 +31,7 @@ class Router:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __hash_id(self, id):
         return (id % self.destination_nodes_amount) + 1

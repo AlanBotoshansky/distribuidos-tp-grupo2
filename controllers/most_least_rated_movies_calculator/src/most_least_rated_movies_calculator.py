@@ -27,8 +27,7 @@ class MostLeastRatedMoviesCalculator:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __update_movie_ratings(self, movie_ratings_batch):
         for movie_rating in movie_ratings_batch.get_items():

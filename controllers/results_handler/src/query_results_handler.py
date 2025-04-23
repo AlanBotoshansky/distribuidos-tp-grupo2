@@ -15,8 +15,7 @@ class QueryResultsHandler:
     def __handle_signal(self, signalnum, frame):
         if signalnum == signal.SIGTERM:
             logging.info(f"action: signal_received_query_handler_{self._num_query} | result: success | signal: SIGTERM")
-            self._middleware.stop_handling_messages()
-            self._middleware.close_connection()
+            self._middleware.stop()
             
     def __handle_result_packet(self, packet):
         msg = PacketSerde.deserialize(packet)

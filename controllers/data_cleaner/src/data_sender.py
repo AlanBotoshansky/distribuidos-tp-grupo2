@@ -31,4 +31,4 @@ class DataSender:
                 if self._current_exchange_i >= len(self._output_exchanges):
                     logging.info("action: stop_sending | result: success")
                     break
-        self._middleware.close_connection()
+        self._middleware.stop()

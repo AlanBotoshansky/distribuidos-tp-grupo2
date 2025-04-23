@@ -27,8 +27,7 @@ class AvgRateRevenueBudgetCalculator:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
         for analyzed_movie in analyzed_movies_batch.get_items():

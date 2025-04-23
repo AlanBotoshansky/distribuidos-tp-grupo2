@@ -28,8 +28,7 @@ class TopActorsParticipationCalculator:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __update_actors_participation(self, movies_credits_batch):
         for movie_credit in movies_credits_batch.get_items():

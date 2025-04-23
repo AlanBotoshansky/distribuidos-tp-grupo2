@@ -33,8 +33,7 @@ class MoviesJoiner:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
         
     def __next_id(self):
         """
@@ -49,8 +48,7 @@ class MoviesJoiner:
             for movie in movies_batch.get_items():
                 self._movies[movie.id] = movie.title
         elif msg.packet_type() == PacketType.EOF:
-            self._middleware.stop_handling_messages()
-            self._middleware.close_connection()
+            self._middleware.stop()
             self._middleware = Middleware(callback_function=self.__handle_batch_packet_to_join,
                                           input_queues=[self._input_queue_to_join],
                                           output_exchange=self._output_exchange,

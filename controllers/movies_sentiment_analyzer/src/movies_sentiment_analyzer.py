@@ -35,8 +35,7 @@ class MoviesSentimentAnalyzer:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __analyze_movies(self, movies_batch):
         analyzed_movies = []

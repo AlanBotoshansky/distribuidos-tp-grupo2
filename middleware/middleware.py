@@ -1,5 +1,6 @@
 import pika
 import logging
+import functools
 
 HOST = 'rabbitmq'
 EXCHANGE_TYPE = 'fanout'
@@ -13,6 +14,8 @@ class Middleware:
         self._callback_args = callback_args
         self._input_queues = input_queues
         self._output_exchange = output_exchange
+        self._consumer_tags = []
+        self._consuming = False
         
         self.__declare_input_queues()
         self.__declare_output_exchange()
@@ -25,12 +28,14 @@ class Middleware:
                 self._channel.exchange_declare(exchange=exchange, exchange_type=EXCHANGE_TYPE)
                 self._channel.queue_bind(exchange=exchange, queue=queue)
             
-            self._channel.basic_consume(queue=queue, on_message_callback=self.__wrapper_callback_function())
+            tag = self._channel.basic_consume(queue=queue, on_message_callback=self.__wrapper_callback_function())
+            self._consumer_tags.append(tag)
             
     def __wrapper_callback_function(self):
         def callback(ch, method, properties, body):
             self._callback_function(body, *self._callback_args)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+            if ch.is_open:
+                ch.basic_ack(delivery_tag=method.delivery_tag)
             
         return callback
         
@@ -53,16 +58,25 @@ class Middleware:
             self._channel.basic_publish(exchange='', routing_key=queue, body=msg)
         
     def handle_messages(self):
+        self._consuming = True
         try:
             self._channel.start_consuming()
-        except OSError:
-            return
-            
-    def stop_handling_messages(self):
-        self._channel.stop_consuming()
-        logging.info("action: middleware_stop_consuming | result: success")
+        finally:
+            self._consuming = False
 
-    def close_connection(self):
+    def __close_connection(self):
         self._channel.close()
         self._connection.close()
         logging.info("action: middleware_close_connection | result: success")
+        
+    def stop(self):
+        if self._consuming:
+            for tag in self._consumer_tags:
+                self._connection.add_callback_threadsafe(
+                    functools.partial(self._channel.basic_cancel, consumer_tag=tag)
+                )
+            self._connection.add_callback_threadsafe(self._channel.stop_consuming)
+            logging.info("action: middleware_stop_consuming | result: success")
+            self._connection.add_callback_threadsafe(self.__close_connection)
+        else:
+            self.__close_connection()

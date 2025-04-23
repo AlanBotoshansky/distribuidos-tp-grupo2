@@ -28,8 +28,7 @@ class TopInvestorCountriesCalculator:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
     
     def __update_investments(self, movies_batch):
         for movie in movies_batch.get_items():

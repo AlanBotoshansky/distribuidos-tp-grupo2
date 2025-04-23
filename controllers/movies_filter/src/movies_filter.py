@@ -34,8 +34,7 @@ class MoviesFilter:
         """
         Cleanup resources during shutdown
         """
-        self._middleware.stop_handling_messages()
-        self._middleware.close_connection()
+        self._middleware.stop()
 
     def __filter_movie(self, movie):
         if not hasattr(movie, self._filter_field):
