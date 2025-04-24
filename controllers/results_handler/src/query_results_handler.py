@@ -8,7 +8,8 @@ class QueryResultsHandler:
     def __init__(self, num_query, input_queues, results_queue):
         self._num_query = num_query
         self._results_queue = results_queue
-        self._middleware = Middleware(callback_function=self.__handle_result_packet, input_queues=input_queues)
+        input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_result_packet) for input_queue in input_queues]
+        self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 

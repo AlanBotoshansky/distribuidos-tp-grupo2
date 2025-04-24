@@ -7,12 +7,10 @@ EXCHANGE_TYPE = 'fanout'
 PREFETCH_COUNT = 1
 
 class Middleware:
-    def __init__(self, callback_function=None, callback_args=(), input_queues=[], output_exchange=None):
+    def __init__(self, input_queues_and_callback_functions=[], output_exchange=None):
         self._connection = pika.BlockingConnection(pika.ConnectionParameters(host=HOST))
         self._channel = self._connection.channel()
-        self._callback_function = callback_function
-        self._callback_args = callback_args
-        self._input_queues = input_queues
+        self._input_queues_and_callback_functions = input_queues_and_callback_functions
         self._output_exchange = output_exchange
         self._consumer_tags = []
         self._consuming = False
@@ -22,18 +20,18 @@ class Middleware:
         
     def __declare_input_queues(self):
         self._channel.basic_qos(prefetch_count=PREFETCH_COUNT)    
-        for queue, exchange in self._input_queues:
+        for queue, exchange, callback_function in self._input_queues_and_callback_functions:
             self._channel.queue_declare(queue=queue)
             if exchange:
                 self._channel.exchange_declare(exchange=exchange, exchange_type=EXCHANGE_TYPE)
                 self._channel.queue_bind(exchange=exchange, queue=queue)
             
-            tag = self._channel.basic_consume(queue=queue, on_message_callback=self.__wrapper_callback_function())
+            tag = self._channel.basic_consume(queue=queue, on_message_callback=self.__wrapper_callback_function(callback_function))
             self._consumer_tags.append(tag)
             
-    def __wrapper_callback_function(self):
+    def __wrapper_callback_function(self, callback_function):
         def callback(ch, method, properties, body):
-            self._callback_function(body, *self._callback_args)
+            callback_function(body)
             if ch.is_open:
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             
@@ -53,8 +51,11 @@ class Middleware:
             self._channel.exchange_declare(exchange=exchange, exchange_type=EXCHANGE_TYPE)
             self._channel.basic_publish(exchange=exchange, routing_key='', body=msg)
         
-    def reenqueue_message(self, msg):
-        for queue, _ in self._input_queues:
+    def reenqueue_message(self, msg, queue=None):
+        if queue is None:
+            for q, _, _ in self._input_queues_and_callback_functions:
+                self._channel.basic_publish(exchange='', routing_key=q, body=msg)
+        else:
             self._channel.basic_publish(exchange='', routing_key=queue, body=msg)
         
     def handle_messages(self):

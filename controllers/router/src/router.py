@@ -113,9 +113,8 @@ class Router:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
-        self._middleware = Middleware(callback_function=self.__handle_packet,
-                                      input_queues=self._input_queues,
-                                     )
+        input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
+        self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions)
         self._middleware.handle_messages()
 
         
