@@ -238,13 +238,15 @@ def generate_client():
         name="client",
         image="client",
         environment=[
-            "PYTHONUNBUFFERED=1"
+            "PYTHONUNBUFFERED=1",
+            "RESULTS_DIR=/results",
         ],
         volumes=[
             "./client/config.ini:/config.ini",
             "./datasets/movies_metadata.csv:/datasets/movies_metadata.csv",
             "./datasets/ratings.csv:/datasets/ratings.csv",
-            "./datasets/credits.csv:/datasets/credits.csv"
+            "./datasets/credits.csv:/datasets/credits.csv",
+            "./results:/results"
         ],
         networks=[
             "testing_net"

@@ -4,10 +4,19 @@ import signal
 import multiprocessing as mp
 import communication.communication as communication
 from datetime import datetime
+import os
+
+QUERY_RESULTS_HEADERS = [
+    "id,title,genres",
+    "country,investment",
+    "id,title,avg_rating",
+    "actor,participation",
+    "sentiment,avg_rate_revenue_budget",
+]
 
 class Client:
     
-    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, movies_batch_max_size, ratings_batch_max_size, credits_batch_max_size):
+    def __init__(self, server_ip_data, server_port_data, server_ip_results, server_port_results, movies_path, ratings_path, credits_path, movies_batch_max_size, ratings_batch_max_size, credits_batch_max_size, results_dir):
         self._server_ip_data = server_ip_data
         self._server_port_data = server_port_data
         self._server_ip_results = server_ip_results
@@ -18,6 +27,8 @@ class Client:
         self._movies_batch_max_size = movies_batch_max_size
         self._ratings_batch_max_size = ratings_batch_max_size
         self._credits_batch_max_size = credits_batch_max_size
+        self._results_dir = results_dir
+        self._result_files = {}
         self.data_socket = None
         self.results_socket = None
         self.results_receiver = None
@@ -40,10 +51,35 @@ class Client:
             logging.info(f'action: close_{socket_name} | result: success')
         except OSError:
             logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
+            
+    def __create_results_dir(self):
+        os.makedirs(self._results_dir, exist_ok=True)
+
+    def __get_result_file(self, num_query):
+        if num_query not in self._result_files:
+            file_path = os.path.join(self._results_dir, f"query_{num_query}_results.csv")
+            self._result_files[num_query] = open(file_path, 'w')
+            self._result_files[num_query].write(f"{QUERY_RESULTS_HEADERS[num_query - 1]}\n")
+        return self._result_files[num_query]
+
+    def __write_result_to_file(self, num_query, result):
+        file_handle = self.__get_result_file(num_query)
+        file_handle.write(f"{result}\n")
+        file_handle.flush()
+
+    def __close_result_file(self, num_query):
+        if num_query in self._result_files:
+            self._result_files[num_query].close()
+            self._result_files.pop(num_query)
+
+    def __close_all_result_files(self):
+        for num_query in self._result_files:
+            self.__close_result_file(num_query)
     
     def _shutdown(self):
         self.__close_socket(self.data_socket, "data_socket")
         self.__close_socket(self.results_socket, "results_socket")
+        self.__close_all_result_files()
             
         self.results_receiver.join()
     
@@ -71,17 +107,21 @@ class Client:
         communication.send_message(self.data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
         
-    def _receive_results(self, results_socket): 
+    def _receive_results(self, results_socket):
+        self.__create_results_dir()
+        
         start_time = datetime.now()
         while True:
             try:
                 message = communication.receive_lines_message(results_socket)
-                num_query, results = message[0], message[1:]
+                num_query, results = int(message[0]), message[1:]
                 for result in results:
                     if result == communication.EOF:
                         logging.info(f"Query {num_query} resolved in {(datetime.now() - start_time).total_seconds()} seconds")
-                        continue
-                    logging.info(f"Received result from query {num_query}: {result}")
+                        self.__close_result_file(num_query)
+                    else:
+                        self.__write_result_to_file(num_query, result)
+                        logging.info(f"Received result from query {num_query}: {result}")
             except OSError as e:
                 logging.error(f"Error while receiving results: {e}")
                 return
