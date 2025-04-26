@@ -5,7 +5,6 @@ from messages.movie import Movie
 from messages.exceptions import InvalidMovieInBatchError
 
 from messages.serialization import (
-    LENGTH_FIELD, 
     encode_string, encode_num, encode_strings_iterable, encode_date,
     decode_string, decode_int, decode_float, decode_strings_list, decode_date
 )
@@ -128,15 +127,10 @@ class MoviesBatch(BaseMessage):
             field_type = FieldType(payload[offset])
             offset += LENGTH_FIELD_TYPE
             
-            field, decode = field_name_and_decoder[field_type]
+            field, decoder = field_name_and_decoder[field_type]
             
             for movie in movies:
-                length = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-                offset += LENGTH_FIELD
-                field_data = payload[offset:offset+length]
-                offset += length
-                
-                field_value = decode(field_data)
+                field_value, offset = cls.deserialize_field(payload, offset, decoder)
                 setattr(movie, field, field_value)
 
         return cls(client_id, movies)

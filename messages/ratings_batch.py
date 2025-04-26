@@ -2,11 +2,6 @@ from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.rating import Rating
 
-from messages.serialization import (
-    LENGTH_FIELD,
-    decode_int, decode_float,
-)
-
 class RatingsBatch(BaseMessage):
     def __init__(self, client_id, ratings):
         super().__init__(client_id)
@@ -39,15 +34,8 @@ class RatingsBatch(BaseMessage):
         
         ratings = []
         while offset < len(payload):
-            length_movie_id = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-            offset += LENGTH_FIELD
-            movie_id = decode_int(payload[offset:offset+length_movie_id])
-            offset += length_movie_id
-            
-            length_rating = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-            offset += LENGTH_FIELD
-            rating = decode_float(payload[offset:offset+length_rating])
-            offset += length_rating
+            movie_id, offset = cls.deserialize_int(payload, offset)
+            rating, offset = cls.deserialize_float(payload, offset)
             
             ratings.append(Rating(movie_id, rating))
 

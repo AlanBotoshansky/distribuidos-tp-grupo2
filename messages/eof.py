@@ -1,6 +1,6 @@
 from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
-from messages.serialization import LENGTH_FIELD, encode_strings_iterable, decode_strings_set
+from messages.serialization import encode_strings_iterable
 
 class EOF(BaseMessage):
     def __init__(self, client_id, seen_ids=None):
@@ -25,11 +25,7 @@ class EOF(BaseMessage):
         offset = 0
         
         client_id, offset = cls.deserialize_client_id(payload, offset)
-        
-        length_set = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        seen_ids = decode_strings_set(payload[offset:offset+length_set])
-        offset += length_set
+        seen_ids, offset = cls.deserialize_strings_set(payload, offset)
         
         return cls(client_id, seen_ids)
     

@@ -2,9 +2,7 @@ from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 
 from messages.serialization import (
-    LENGTH_FIELD, 
     encode_string, encode_num,
-    decode_string, decode_int,
 )
 
 class InvestorCountry(BaseMessage):
@@ -32,16 +30,8 @@ class InvestorCountry(BaseMessage):
         offset = 0
         
         client_id, offset = cls.deserialize_client_id(payload, offset)
-        
-        length_country = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        country = decode_string(payload[offset:offset+length_country])
-        offset += length_country
-        
-        length_investment = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        investment = decode_int(payload[offset:offset+length_investment])
-        offset += length_investment
+        country, offset = cls.deserialize_string(payload, offset)
+        investment, offset = cls.deserialize_int(payload, offset)
 
         return cls(client_id, country, investment)
     

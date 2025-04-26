@@ -3,9 +3,7 @@ from messages.packet_type import PacketType
 from messages.analyzed_movie import Sentiment
 
 from messages.serialization import (
-    LENGTH_FIELD, 
     encode_num,
-    decode_int, decode_float,
 )
 
 class AvgRateRevenueBudget(BaseMessage):
@@ -33,16 +31,8 @@ class AvgRateRevenueBudget(BaseMessage):
         offset = 0
         
         client_id, offset = cls.deserialize_client_id(payload, offset)
-        
-        length_sentiment = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        sentiment = decode_int(payload[offset:offset+length_sentiment])
-        offset += length_sentiment
-        
-        length_avg = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        avg = decode_float(payload[offset:offset+length_avg])
-        offset += length_avg
+        sentiment, offset = cls.deserialize_int(payload, offset)
+        avg, offset = cls.deserialize_float(payload, offset)
 
         return cls(client_id, Sentiment(sentiment), avg)
     

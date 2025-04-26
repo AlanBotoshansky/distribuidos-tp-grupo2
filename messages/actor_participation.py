@@ -2,9 +2,7 @@ from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 
 from messages.serialization import (
-    LENGTH_FIELD, 
     encode_string, encode_num,
-    decode_string, decode_int,
 )
 
 class ActorParticipation(BaseMessage):
@@ -32,16 +30,8 @@ class ActorParticipation(BaseMessage):
         offset = 0
         
         client_id, offset = cls.deserialize_client_id(payload, offset)
-        
-        length_actor = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        actor = decode_string(payload[offset:offset+length_actor])
-        offset += length_actor
-        
-        length_participation = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
-        offset += LENGTH_FIELD
-        participation = decode_int(payload[offset:offset+length_participation])
-        offset += length_participation
+        actor, offset = cls.deserialize_string(payload, offset)
+        participation, offset = cls.deserialize_int(payload, offset)
 
         return cls(client_id, actor, participation)
     
