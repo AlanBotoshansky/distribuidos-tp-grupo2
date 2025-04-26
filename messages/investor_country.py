@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 
 from messages.serialization import (
@@ -6,8 +7,9 @@ from messages.serialization import (
     decode_string, decode_int,
 )
 
-class InvestorCountry:
-    def __init__(self, country, investment):
+class InvestorCountry(BaseMessage):
+    def __init__(self, client_id, country, investment):
+        super().__init__(client_id)
         self.country = country
         self.investment = investment
         
@@ -19,6 +21,7 @@ class InvestorCountry:
 
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         payload += encode_string(self.country)
         payload += encode_num(self.investment)
 
@@ -27,6 +30,8 @@ class InvestorCountry:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
+        
+        client_id, offset = cls.deserialize_client_id(payload, offset)
         
         length_country = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
         offset += LENGTH_FIELD
@@ -38,7 +43,7 @@ class InvestorCountry:
         investment = decode_int(payload[offset:offset+length_investment])
         offset += length_investment
 
-        return cls(country, investment)
+        return cls(client_id, country, investment)
     
     def to_csv_line(self):
         return f"{self.country},{self.investment}"

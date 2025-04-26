@@ -55,7 +55,7 @@ class MoviesSentimentAnalyzer:
     
     def __analyze_movies_sentiment(self, movies_batch):
         analyzed_movies = self.__analyze_movies(movies_batch)
-        analyzed_movies_batch = AnalyzedMoviesBatch(analyzed_movies)
+        analyzed_movies_batch = AnalyzedMoviesBatch(movies_batch.client_id, analyzed_movies)
         self._middleware.send_message(PacketSerde.serialize(analyzed_movies_batch))
         logging.debug(f"action: movies_batch_analyzed | result: success | analyzed_movies_batch: {analyzed_movies_batch}")
     
@@ -68,7 +68,7 @@ class MoviesSentimentAnalyzer:
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
-                self._middleware.send_message(PacketSerde.serialize(EOF()))
+                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
                 logging.info("action: sent_eof | result: success")
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))

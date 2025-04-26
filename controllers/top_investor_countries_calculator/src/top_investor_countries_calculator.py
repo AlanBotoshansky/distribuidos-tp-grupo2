@@ -45,11 +45,12 @@ class TopInvestorCountriesCalculator:
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
             self.__update_investments(movies_batch)
-        elif msg.packet_type() == PacketType.EOF:            
+        elif msg.packet_type() == PacketType.EOF:
+            eof = msg
             for country, investment in self.__get_top_investor_countries():
-                investor_country = InvestorCountry(country, investment)
+                investor_country = InvestorCountry(eof.client_id, country, investment)
                 self._middleware.send_message(PacketSerde.serialize(investor_country))
-            self._middleware.send_message(PacketSerde.serialize(EOF()))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")

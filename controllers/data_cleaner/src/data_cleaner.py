@@ -36,6 +36,7 @@ class DataCleaner:
         self._ratings_exchange = ratings_exchange
         self._credits_exchange = credits_exchange
         self._sender_process = None
+        self._next_client_id = 1
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -78,16 +79,18 @@ class DataCleaner:
         Accept new connections
 
         Function blocks until a connection to a client is made.
-        Then connection created is printed and returned
+        The connection created and the client id are returned
         """
         # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
         c, addr = self._server_socket.accept()
         self._client_sock = c
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        client_id = self._next_client_id
+        self._next_client_id += 1
+        return c, client_id
     
-    def __handle_client_connection(self, client_sock):
+    def __handle_client_connection(self, client_sock, client_id):
         """
         Read message from a specific client socket and closes the socket
 
@@ -97,20 +100,20 @@ class DataCleaner:
         while not self._shutdown_requested:
             try:
                 msg = communication.receive_message(client_sock)
-                self.__handle_client_message(msg)
+                self.__handle_client_message(client_id, msg)
             except (OSError, ConnectionError) as e:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
                 break
             
-    def __handle_client_message(self, msg):
+    def __handle_client_message(self, client_id, msg):
         if msg == communication.EOF:
-            self._data_queue.put(EOF())
+            self._data_queue.put(EOF(client_id))
             self._cleaning_file = self._cleaning_file.next()
             return
         if self._cleaning_file == FileType.MOVIES:
             try:
                 movies_csv_lines = communication.parse_lines_message(msg)
-                movies_batch = MoviesBatch.from_csv_lines(movies_csv_lines)
+                movies_batch = MoviesBatch.from_csv_lines(client_id, movies_csv_lines)
                 self._data_queue.put(movies_batch)
             except InvalidLineError as e:
                 # logging.error(f"action: handle_message | result: fail | error: {e}")
@@ -118,7 +121,7 @@ class DataCleaner:
         elif self._cleaning_file == FileType.RATINGS:
             try:
                 ratings_csv_lines = communication.parse_lines_message(msg)
-                ratings_batch = RatingsBatch.from_csv_lines(ratings_csv_lines)
+                ratings_batch = RatingsBatch.from_csv_lines(client_id, ratings_csv_lines)
                 self._data_queue.put(ratings_batch)
             except InvalidLineError as e:
                 # logging.error(f"action: handle_message | result: fail | error: {e}")
@@ -126,7 +129,7 @@ class DataCleaner:
         elif self._cleaning_file == FileType.CREDITS:
             try:
                 credits_csv_lines = communication.parse_lines_message(msg)
-                credits_batch = CreditsBatch.from_csv_lines(credits_csv_lines)
+                credits_batch = CreditsBatch.from_csv_lines(client_id, credits_csv_lines)
                 self._data_queue.put(credits_batch)
             except InvalidLineError as e:
                 logging.error(f"action: handle_message | result: fail | error: {e}")
@@ -150,8 +153,8 @@ class DataCleaner:
         self._sender_process.start()
         while not self._shutdown_requested:
             try:
-                client_sock = self.__accept_new_connection()
-                self.__handle_client_connection(client_sock)
+                client_sock, client_id = self.__accept_new_connection()
+                self.__handle_client_connection(client_sock, client_id)
             except OSError as e:
                 if self._shutdown_requested:
                     break

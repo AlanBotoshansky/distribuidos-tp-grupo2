@@ -50,7 +50,7 @@ class Router:
         
         for item in batch.get_items():
             destination_id = self.__hash_id(get_hash_id(item))
-            destination_batch = batches.get(destination_id, batch_class([]))
+            destination_batch = batches.get(destination_id, batch_class(batch.client_id, []))
             destination_batch.add_item(item)
             batches[destination_id] = destination_batch
         
@@ -84,11 +84,11 @@ class Router:
             log_action_prefix="credits_batch"
         )
         
-    def __send_eof_to_all_destination_nodes(self):
+    def __send_eof_to_all_destination_nodes(self, client_id):
         for output_exchange_prefix in self._output_exchange_prefixes:
             for i in range(1, self.destination_nodes_amount + 1):
                 output_exchange = f"{output_exchange_prefix}_{i}"
-                self._middleware.send_message(PacketSerde.serialize(EOF()), exchange=output_exchange)
+                self._middleware.send_message(PacketSerde.serialize(EOF(client_id)), exchange=output_exchange)
                 logging.info(f"action: sent_eof | result: success | destination_id: {i}")
     
     def __handle_packet(self, packet):
@@ -106,7 +106,7 @@ class Router:
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
-                self.__send_eof_to_all_destination_nodes()
+                self.__send_eof_to_all_destination_nodes(eof.client_id)
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))
         else:

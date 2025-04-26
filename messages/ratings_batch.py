@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.rating import Rating
 
@@ -6,8 +7,9 @@ from messages.serialization import (
     decode_int, decode_float,
 )
 
-class RatingsBatch:
-    def __init__(self, ratings):
+class RatingsBatch(BaseMessage):
+    def __init__(self, client_id, ratings):
+        super().__init__(client_id)
         self.ratings = ratings
 
     def __repr__(self):
@@ -24,6 +26,7 @@ class RatingsBatch:
     
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         for rating in self.ratings:
             payload += rating.serialize()
         return payload
@@ -31,8 +34,10 @@ class RatingsBatch:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
-        ratings = []
         
+        client_id, offset = cls.deserialize_client_id(payload, offset)
+        
+        ratings = []
         while offset < len(payload):
             length_movie_id = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
             offset += LENGTH_FIELD
@@ -46,12 +51,12 @@ class RatingsBatch:
             
             ratings.append(Rating(movie_id, rating))
 
-        return cls(ratings)
+        return cls(client_id, ratings)
     
     @classmethod
-    def from_csv_lines(cls, lines: list[str]):
+    def from_csv_lines(cls, client_id, lines: list[str]):
         ratings = []
         for line in lines:
             rating = Rating.from_csv_line(line)
             ratings.append(rating)
-        return cls(ratings)
+        return cls(client_id, ratings)

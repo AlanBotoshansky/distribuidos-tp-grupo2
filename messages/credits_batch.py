@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.credit import Credit
 
@@ -6,8 +7,9 @@ from messages.serialization import (
     decode_int, decode_strings_list,
 )
 
-class CreditsBatch:
-    def __init__(self, credits):
+class CreditsBatch(BaseMessage):
+    def __init__(self, client_id, credits):
+        super().__init__(client_id)
         self.credits = credits
 
     def __repr__(self):
@@ -24,6 +26,7 @@ class CreditsBatch:
     
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         for credit in self.credits:
             payload += credit.serialize()
         return payload
@@ -31,8 +34,10 @@ class CreditsBatch:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
-        credits = []
         
+        client_id, offset = cls.deserialize_client_id(payload, offset)
+        
+        credits = []
         while offset < len(payload):
             length_movie_id = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
             offset += LENGTH_FIELD
@@ -46,12 +51,12 @@ class CreditsBatch:
             
             credits.append(Credit(movie_id, cast))
 
-        return cls(credits)
+        return cls(client_id, credits)
     
     @classmethod
-    def from_csv_lines(cls, lines: list[str]):
+    def from_csv_lines(cls, client_id, lines: list[str]):
         credits = []
         for line in lines:
             credit = Credit.from_csv_line(line)
             credits.append(credit)
-        return cls(credits)
+        return cls(client_id, credits)

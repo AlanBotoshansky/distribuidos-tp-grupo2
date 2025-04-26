@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 
 from messages.serialization import (
@@ -6,8 +7,9 @@ from messages.serialization import (
     decode_string, decode_int,
 )
 
-class ActorParticipation:
-    def __init__(self, actor, participation):
+class ActorParticipation(BaseMessage):
+    def __init__(self, client_id, actor, participation):
+        super().__init__(client_id)
         self.actor = actor
         self.participation = participation
         
@@ -19,6 +21,7 @@ class ActorParticipation:
 
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         payload += encode_string(self.actor)
         payload += encode_num(self.participation)
 
@@ -27,6 +30,8 @@ class ActorParticipation:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
+        
+        client_id, offset = cls.deserialize_client_id(payload, offset)
         
         length_actor = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
         offset += LENGTH_FIELD
@@ -38,7 +43,7 @@ class ActorParticipation:
         participation = decode_int(payload[offset:offset+length_participation])
         offset += length_participation
 
-        return cls(actor, participation)
+        return cls(client_id, actor, participation)
     
     def to_csv_line(self):
         return f"{self.actor},{self.participation}"

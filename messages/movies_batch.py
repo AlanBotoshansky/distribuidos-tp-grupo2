@@ -1,4 +1,5 @@
 from enum import IntEnum
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.movie import Movie
 from messages.exceptions import InvalidMovieInBatchError
@@ -22,8 +23,9 @@ class FieldType(IntEnum):
     OVERVIEW = 7
     REVENUE = 8
 
-class MoviesBatch:
-    def __init__(self, movies):
+class MoviesBatch(BaseMessage):
+    def __init__(self, client_id, movies):
+        super().__init__(client_id)
         self.movies = movies
 
     def __repr__(self):
@@ -51,6 +53,7 @@ class MoviesBatch:
         }
 
         payload = b""
+        payload += self.serialize_client_id()
         
         payload += len(self.movies).to_bytes(LENGTH_MOVIES_AMOUNT, 'big')
         
@@ -113,6 +116,8 @@ class MoviesBatch:
         }
 
         offset = 0
+        
+        client_id, offset = cls.deserialize_client_id(payload, offset)
 
         amount_movies = int.from_bytes(payload[offset:offset+LENGTH_MOVIES_AMOUNT], 'big')
         offset += LENGTH_MOVIES_AMOUNT
@@ -134,15 +139,15 @@ class MoviesBatch:
                 field_value = decode(field_data)
                 setattr(movie, field, field_value)
 
-        return cls(movies)
+        return cls(client_id, movies)
     
     @classmethod
-    def from_csv_lines(cls, lines: list[str]):
+    def from_csv_lines(cls, client_id, lines: list[str]):
         movies = []
         for line in lines:
             movie = Movie.from_csv_line(line)
             movies.append(movie)
-        return cls(movies)
+        return cls(client_id, movies)
     
     def to_csv_lines(self):
         lines = []

@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.analyzed_movie import Sentiment
 
@@ -7,8 +8,9 @@ from messages.serialization import (
     decode_int, decode_float,
 )
 
-class AvgRateRevenueBudget:
-    def __init__(self, sentiment, avg):
+class AvgRateRevenueBudget(BaseMessage):
+    def __init__(self, client_id, sentiment, avg):
+        super().__init__(client_id)
         self.sentiment = sentiment
         self.avg = avg
         
@@ -20,6 +22,7 @@ class AvgRateRevenueBudget:
 
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         payload += encode_num(self.sentiment.value)
         payload += encode_num(self.avg)
 
@@ -28,6 +31,8 @@ class AvgRateRevenueBudget:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
+        
+        client_id, offset = cls.deserialize_client_id(payload, offset)
         
         length_sentiment = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
         offset += LENGTH_FIELD
@@ -39,7 +44,7 @@ class AvgRateRevenueBudget:
         avg = decode_float(payload[offset:offset+length_avg])
         offset += length_avg
 
-        return cls(Sentiment(sentiment), avg)
+        return cls(client_id, Sentiment(sentiment), avg)
     
     def to_csv_line(self):
         return f"{self.sentiment},{self.avg}"

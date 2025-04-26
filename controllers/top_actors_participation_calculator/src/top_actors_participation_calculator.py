@@ -45,11 +45,12 @@ class TopActorsParticipationCalculator:
         if msg.packet_type() == PacketType.MOVIE_CREDITS_BATCH:
             movies_credits_batch = msg
             self.__update_actors_participation(movies_credits_batch)
-        elif msg.packet_type() == PacketType.EOF:            
+        elif msg.packet_type() == PacketType.EOF:  
+            eof = msg          
             for actor, participation in self.__get_top_actors_participations():
-                actor_participation = ActorParticipation(actor, participation)
+                actor_participation = ActorParticipation(eof.client_id, actor, participation)
                 self._middleware.send_message(PacketSerde.serialize(actor_participation))
-            self._middleware.send_message(PacketSerde.serialize(EOF()))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")

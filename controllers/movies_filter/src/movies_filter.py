@@ -74,7 +74,7 @@ class MoviesFilter:
                 filtered_movies.append(movie)
         
         if filtered_movies:
-            filtered_movies_batch = MoviesBatch(filtered_movies)
+            filtered_movies_batch = MoviesBatch(movies_batch.client_id, filtered_movies)
             self._middleware.send_message(PacketSerde.serialize(filtered_movies_batch, fields_subset=self._output_fields_subset))
             logging.debug(f"action: movies_batch_filtered | result: success | filtered_movies_batch: {filtered_movies_batch}")
     
@@ -87,7 +87,7 @@ class MoviesFilter:
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
-                self._middleware.send_message(PacketSerde.serialize(EOF()))
+                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
                 logging.info("action: sent_eof | result: success")
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))

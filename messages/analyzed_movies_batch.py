@@ -1,3 +1,4 @@
+from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.analyzed_movie import Sentiment, AnalyzedMovie
 
@@ -6,8 +7,9 @@ from messages.serialization import (
     decode_float, decode_int,
 )
 
-class AnalyzedMoviesBatch:
-    def __init__(self, analyzed_movies):
+class AnalyzedMoviesBatch(BaseMessage):
+    def __init__(self, client_id, analyzed_movies):
+        super().__init__(client_id)
         self.analyzed_movies = analyzed_movies
 
     def __repr__(self):
@@ -24,6 +26,7 @@ class AnalyzedMoviesBatch:
     
     def serialize(self):
         payload = b""
+        payload += self.serialize_client_id()
         for analyzed_movie in self.analyzed_movies:
             payload += analyzed_movie.serialize()
         return payload
@@ -31,8 +34,10 @@ class AnalyzedMoviesBatch:
     @classmethod
     def deserialize(cls, payload: bytes):
         offset = 0
-        analyzed_movies = []
         
+        client_id, offset = cls.deserialize_client_id(payload, offset)
+        
+        analyzed_movies = []
         while offset < len(payload):
             length_revenue = int.from_bytes(payload[offset:offset+LENGTH_FIELD], 'big')
             offset += LENGTH_FIELD
@@ -51,4 +56,4 @@ class AnalyzedMoviesBatch:
             
             analyzed_movies.append(AnalyzedMovie(revenue, budget, Sentiment(sentiment)))
 
-        return cls(analyzed_movies)
+        return cls(client_id, analyzed_movies)

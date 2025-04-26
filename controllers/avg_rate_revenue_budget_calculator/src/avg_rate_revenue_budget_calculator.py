@@ -39,10 +39,10 @@ class AvgRateRevenueBudgetCalculator:
             budget_sum += budget
             self.revenue_budget_by_sentiment[sentiment] = (revenue_sum, budget_sum)
     
-    def __get_avgs_rate_revenue_budget_by_sentiment(self):
+    def __get_avgs_rate_revenue_budget_by_sentiment(self, client_id):
         avgs_rate_revenue_budget = []
         for sentiment, (revenue, budget) in self.revenue_budget_by_sentiment.items():
-            avg_rate_revenue_budget = AvgRateRevenueBudget(sentiment, revenue/budget)
+            avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, sentiment, revenue/budget)
             avgs_rate_revenue_budget.append(avg_rate_revenue_budget)
         return avgs_rate_revenue_budget
     
@@ -51,11 +51,12 @@ class AvgRateRevenueBudgetCalculator:
         if msg.packet_type() == PacketType.ANALYZED_MOVIES_BATCH:
             analyzed_movies_batch = msg
             self.__update_revenues_budgets(analyzed_movies_batch)
-        elif msg.packet_type() == PacketType.EOF:            
-            for avg_rate_revenue_budget in self.__get_avgs_rate_revenue_budget_by_sentiment():
+        elif msg.packet_type() == PacketType.EOF:
+            eof = msg
+            for avg_rate_revenue_budget in self.__get_avgs_rate_revenue_budget_by_sentiment(eof.client_id):
                 self._middleware.send_message(PacketSerde.serialize(avg_rate_revenue_budget))
                 logging.debug(f"action: sent_avg_rate_revenue_budget | result: success | avg_rate_revenue_budget: {avg_rate_revenue_budget}")
-            self._middleware.send_message(PacketSerde.serialize(EOF()))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")

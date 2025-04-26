@@ -68,8 +68,8 @@ class MoviesJoiner:
             received_batch_class: Class to instantiate the received batch
             log_action_prefix: Prefix for the log message
         """
-        joined_batch = joined_batch_class([])
-        batch_to_reenqueue = received_batch_class([])
+        joined_batch = joined_batch_class(batch.client_id, [])
+        batch_to_reenqueue = received_batch_class(batch.client_id, [])
         
         for item in batch.get_items():
             movie_id = get_movie_id(item)
@@ -119,7 +119,7 @@ class MoviesJoiner:
         eof.add_seen_id(self._id)
         if len(eof.seen_ids) == self._cluster_size:
             if min(eof.seen_ids) == self._id:
-                self._middleware.send_message(PacketSerde.serialize(EOF()))
+                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
                 logging.info("action: sent_eof | result: success")
         else:
             exchange = "_".join(self._input_queue_to_join[1].split("_")[:-1] + [str(self.__next_id())])
