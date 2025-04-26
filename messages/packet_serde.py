@@ -25,8 +25,6 @@ class PacketSerde:
             return InvestorCountry.deserialize(payload)
         elif packet_type == PacketType.RATINGS_BATCH:
             return RatingsBatch.deserialize(payload)
-        elif packet_type == PacketType.MOVIE_RATING:
-            return MovieRating.deserialize(payload)
         elif packet_type == PacketType.MOVIE_RATINGS_BATCH:
             return MovieRatingsBatch.deserialize(payload)
         elif packet_type == PacketType.CREDITS_BATCH:

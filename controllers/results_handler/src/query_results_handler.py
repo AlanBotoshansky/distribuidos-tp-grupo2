@@ -21,7 +21,7 @@ class QueryResultsHandler:
     def __handle_result_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         result = [self._num_query]
-        if msg.packet_type() == PacketType.MOVIES_BATCH:
+        if msg.packet_type() in [PacketType.MOVIES_BATCH, PacketType.MOVIE_RATINGS_BATCH]:
             query_result = msg.to_csv_lines()
         else:
             query_result = [msg.to_csv_line()]

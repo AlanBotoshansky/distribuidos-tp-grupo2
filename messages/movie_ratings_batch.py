@@ -52,3 +52,10 @@ class MovieRatingsBatch:
             movie_ratings.append(MovieRating(id, title, rating))
 
         return cls(movie_ratings)
+    
+    def to_csv_lines(self):
+        lines = []
+        for movie_rating in self.movie_ratings:
+            line = movie_rating.to_csv_line()
+            lines.append(line)
+        return lines

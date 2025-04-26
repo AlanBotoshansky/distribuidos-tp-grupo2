@@ -5,6 +5,7 @@ from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movie_rating import MovieRating
+from messages.movie_ratings_batch import MovieRatingsBatch
 
 class MostLeastRatedMoviesCalculator:
     def __init__(self, input_queues, output_exchange):
@@ -51,17 +52,17 @@ class MostLeastRatedMoviesCalculator:
                 min_id = movie_id
         most_rated_movie = MovieRating(max_id, self._movie_ratings[max_id][0], max_avg_rating)
         least_rated_movie = MovieRating(min_id, self._movie_ratings[min_id][0], min_avg_rating)
-        return most_rated_movie, least_rated_movie
+        return MovieRatingsBatch([most_rated_movie, least_rated_movie])
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE_RATINGS_BATCH:
             movie_ratings_batch = msg
             self.__update_movie_ratings(movie_ratings_batch)
-        elif msg.packet_type() == PacketType.EOF:            
-            for movie_rating in self.__get_most_least_rated_movies():
-                self._middleware.send_message(PacketSerde.serialize(movie_rating))
-                logging.debug(f"action: sent_movie_rating | result: success | movie_rating: {movie_rating}")
+        elif msg.packet_type() == PacketType.EOF:
+            movie_ratings_batch_result = self.__get_most_least_rated_movies()
+            self._middleware.send_message(PacketSerde.serialize(movie_ratings_batch_result))
+            logging.debug(f"action: sent_movie_ratings_batch | result: success | movie_ratings_batch: {movie_ratings_batch_result}")
             self._middleware.send_message(PacketSerde.serialize(EOF()))
             logging.info("action: sent_eof | result: success")
         else:
