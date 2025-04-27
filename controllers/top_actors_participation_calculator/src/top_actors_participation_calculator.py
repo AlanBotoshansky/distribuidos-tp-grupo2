@@ -31,12 +31,14 @@ class TopActorsParticipationCalculator:
         self._middleware.stop()
     
     def __update_actors_participation(self, movies_credits_batch):
+        client_id = movies_credits_batch.client_id
+        self._actors_participation[client_id] = self._actors_participation.get(client_id, {})
         for movie_credit in movies_credits_batch.get_items():
             for actor in movie_credit.cast:
-                self._actors_participation[actor] = self._actors_participation.get(actor, 0) + 1
+                self._actors_participation[client_id][actor] = self._actors_participation[client_id].get(actor, 0) + 1
     
-    def __get_top_actors_participations(self):
-        sorted_actors_participations = sorted(self._actors_participation.items(), key=lambda x: x[1], reverse=True)
+    def __get_top_actors_participations(self, client_id):
+        sorted_actors_participations = sorted(self._actors_participation[client_id].items(), key=lambda x: x[1], reverse=True)
         top_actors_participations = sorted_actors_participations[:self._top_n_actors_participation]
         return top_actors_participations
     
@@ -47,7 +49,7 @@ class TopActorsParticipationCalculator:
             self.__update_actors_participation(movies_credits_batch)
         elif msg.packet_type() == PacketType.EOF:  
             eof = msg          
-            for actor, participation in self.__get_top_actors_participations():
+            for actor, participation in self.__get_top_actors_participations(eof.client_id):
                 actor_participation = ActorParticipation(eof.client_id, actor, participation)
                 self._middleware.send_message(PacketSerde.serialize(actor_participation))
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
