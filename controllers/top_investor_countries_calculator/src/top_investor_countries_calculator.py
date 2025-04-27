@@ -31,12 +31,14 @@ class TopInvestorCountriesCalculator:
         self._middleware.stop()
     
     def __update_investments(self, movies_batch):
+        client_id = movies_batch.client_id
+        self._investment_by_country[client_id] = self._investment_by_country.get(client_id, {})
         for movie in movies_batch.get_items():
             for country in movie.production_countries:
-                self._investment_by_country[country] = self._investment_by_country.get(country, 0) + movie.budget
+                self._investment_by_country[client_id][country] = self._investment_by_country[client_id].get(country, 0) + movie.budget
     
-    def __get_top_investor_countries(self):
-        sorted_investments = sorted(self._investment_by_country.items(), key=lambda x: x[1], reverse=True)
+    def __get_top_investor_countries(self, client_id):
+        sorted_investments = sorted(self._investment_by_country[client_id].items(), key=lambda x: x[1], reverse=True)
         top_investor_countries = sorted_investments[:self._top_n_investor_countries]
         return top_investor_countries
     
@@ -47,7 +49,7 @@ class TopInvestorCountriesCalculator:
             self.__update_investments(movies_batch)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
-            for country, investment in self.__get_top_investor_countries():
+            for country, investment in self.__get_top_investor_countries(eof.client_id):
                 investor_country = InvestorCountry(eof.client_id, country, investment)
                 self._middleware.send_message(PacketSerde.serialize(investor_country))
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
