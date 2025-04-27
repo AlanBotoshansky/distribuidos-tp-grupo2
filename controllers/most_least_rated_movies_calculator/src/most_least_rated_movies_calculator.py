@@ -31,18 +31,20 @@ class MostLeastRatedMoviesCalculator:
         self._middleware.stop()
     
     def __update_movie_ratings(self, movie_ratings_batch):
+        client_id = movie_ratings_batch.client_id
+        self._movie_ratings[client_id] = self._movie_ratings.get(client_id, {})
         for movie_rating in movie_ratings_batch.get_items():
-            title, sum_ratings, cant_ratings = self._movie_ratings.get(movie_rating.id, (movie_rating.title, 0, 0))
+            title, sum_ratings, cant_ratings = self._movie_ratings[client_id].get(movie_rating.id, (movie_rating.title, 0, 0))
             sum_ratings += movie_rating.rating
             cant_ratings += 1
-            self._movie_ratings[movie_rating.id] = (title, sum_ratings, cant_ratings)
+            self._movie_ratings[client_id][movie_rating.id] = (title, sum_ratings, cant_ratings)
     
     def __get_most_least_rated_movies(self, client_id):
         max_id = None
         max_avg_rating = float('-inf')
         min_id = None
         min_avg_rating = float('inf')
-        for movie_id, (_, sum_ratings, cant_ratings) in self._movie_ratings.items():
+        for movie_id, (_, sum_ratings, cant_ratings) in self._movie_ratings[client_id].items():
             avg_rating = sum_ratings / cant_ratings
             if avg_rating > max_avg_rating:
                 max_avg_rating = avg_rating
@@ -50,8 +52,8 @@ class MostLeastRatedMoviesCalculator:
             if avg_rating < min_avg_rating:
                 min_avg_rating = avg_rating
                 min_id = movie_id
-        most_rated_movie = MovieRating(max_id, self._movie_ratings[max_id][0], max_avg_rating)
-        least_rated_movie = MovieRating(min_id, self._movie_ratings[min_id][0], min_avg_rating)
+        most_rated_movie = MovieRating(max_id, self._movie_ratings[client_id][max_id][0], max_avg_rating)
+        least_rated_movie = MovieRating(min_id, self._movie_ratings[client_id][min_id][0], min_avg_rating)
         return MovieRatingsBatch(client_id, [most_rated_movie, least_rated_movie])
     
     def __handle_packet(self, packet):
