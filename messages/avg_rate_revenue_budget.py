@@ -36,5 +36,5 @@ class AvgRateRevenueBudget(BaseMessage):
 
         return cls(client_id, Sentiment(sentiment), avg)
     
-    def to_csv_line(self):
-        return f"{self.sentiment},{self.avg}"
+    def to_csv_lines(self):
+        return [f"{self.sentiment},{self.avg}"]

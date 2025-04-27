@@ -32,5 +32,5 @@ class EOF(BaseMessage):
     def packet_type(self):
         return PacketType.EOF
     
-    def to_csv_line(self):
-        return 'EOF'
+    def to_csv_lines(self):
+        return ['EOF']

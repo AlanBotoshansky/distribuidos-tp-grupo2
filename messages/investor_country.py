@@ -35,5 +35,5 @@ class InvestorCountry(BaseMessage):
 
         return cls(client_id, country, investment)
     
-    def to_csv_line(self):
-        return f"{self.country},{self.investment}"
+    def to_csv_lines(self):
+        return [f"{self.country},{self.investment}"]

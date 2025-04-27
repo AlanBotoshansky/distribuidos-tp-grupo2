@@ -35,5 +35,5 @@ class ActorParticipation(BaseMessage):
 
         return cls(client_id, actor, participation)
     
-    def to_csv_line(self):
-        return f"{self.actor},{self.participation}"
+    def to_csv_lines(self):
+        return [f"{self.actor},{self.participation}"]
