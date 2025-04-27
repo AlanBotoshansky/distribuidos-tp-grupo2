@@ -20,8 +20,8 @@ class MoviesJoiner:
         self._id = id
         self._middleware = None
         self._movies = {}
-        self._all_movies_received = False
-        self._should_reenqueue_eof = False
+        self._all_movies_received_of_clients = set()
+        self._should_reenqueue_eof_of_clients = set()
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -45,14 +45,20 @@ class MoviesJoiner:
         """
         return (int(self._id) % self._cluster_size) + 1
     
+    def __store_movies(self, movies_batch):
+        client_id = movies_batch.client_id
+        self._movies[client_id] = self._movies.get(client_id, {})
+        for movie in movies_batch.get_items():
+            self._movies[client_id][movie.id] = movie.title
+    
     def __handle_movies_batch_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
-            for movie in movies_batch.get_items():
-                self._movies[movie.id] = movie.title
+            self.__store_movies(movies_batch)
         elif msg.packet_type() == PacketType.EOF:
-            self._all_movies_received = True
+            eof = msg
+            self._all_movies_received_of_clients.add(eof.client_id)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
@@ -68,23 +74,24 @@ class MoviesJoiner:
             received_batch_class: Class to instantiate the received batch
             log_action_prefix: Prefix for the log message
         """
-        joined_batch = joined_batch_class(batch.client_id, [])
-        batch_to_reenqueue = received_batch_class(batch.client_id, [])
+        client_id = batch.client_id
+        joined_batch = joined_batch_class(client_id, [])
+        batch_to_reenqueue = received_batch_class(client_id, [])
         
         for item in batch.get_items():
             movie_id = get_movie_id(item)
-            if movie_id in self._movies:
-                movie_title = self._movies[movie_id]
+            if movie_id in self._movies[client_id]:
+                movie_title = self._movies[client_id][movie_id]
                 joined_item = create_joined_item(movie_id, movie_title, item)
                 joined_batch.add_item(joined_item)
             else:
-                if self._all_movies_received:
+                if client_id in self._all_movies_received_of_clients:
                     continue
                 batch_to_reenqueue.add_item(item)
                 
         if len(batch_to_reenqueue.get_items()) > 0:
             self._middleware.reenqueue_message(PacketSerde.serialize(batch_to_reenqueue), queue=self._input_queue_to_join[0])
-            self._should_reenqueue_eof = True
+            self._should_reenqueue_eof_of_clients.add(client_id)
             
         if len(joined_batch.get_items()) > 0:
             self._middleware.send_message(PacketSerde.serialize(joined_batch))
@@ -111,9 +118,10 @@ class MoviesJoiner:
         )
         
     def __handle_eof(self, eof):
-        if self._should_reenqueue_eof:
+        client_id = eof.client_id
+        if client_id in self._should_reenqueue_eof_of_clients:
             self._middleware.reenqueue_message(PacketSerde.serialize(eof), queue=self._input_queue_to_join[0])
-            self._should_reenqueue_eof = False
+            self._should_reenqueue_eof_of_clients.remove(client_id)
             return
         
         eof.add_seen_id(self._id)
