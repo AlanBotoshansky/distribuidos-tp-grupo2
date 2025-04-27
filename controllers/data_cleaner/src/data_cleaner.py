@@ -19,9 +19,10 @@ class FileType(IntEnum):
     CREDITS = 2
     
     def next(self):
-        if self == FileType.CREDITS:
-            return FileType.CREDITS
-        return FileType(self.value + 1)
+        return FileType((self.value + 1) % len(FileType))
+    
+    def reset(self):
+        return FileType.MOVIES
 
 class DataCleaner:
     def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange):
@@ -103,6 +104,7 @@ class DataCleaner:
                 self.__handle_client_message(client_id, msg)
             except (OSError, ConnectionError) as e:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
+                self._cleaning_file.reset()
                 break
             
     def __handle_client_message(self, client_id, msg):
@@ -154,8 +156,8 @@ class DataCleaner:
         while not self._shutdown_requested:
             try:
                 client_sock, client_id = self.__accept_new_connection()
-                self.__handle_client_connection(client_sock, client_id)
             except OSError as e:
                 if self._shutdown_requested:
                     break
                 logging.error(f"action: accept_connection | result: fail | error: {e}")
+            self.__handle_client_connection(client_sock, client_id)
