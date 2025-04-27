@@ -11,7 +11,7 @@ class AvgRateRevenueBudgetCalculator:
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
-        self.revenue_budget_by_sentiment = {}
+        self._revenue_budget_by_sentiment = {}
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -30,18 +30,20 @@ class AvgRateRevenueBudgetCalculator:
         self._middleware.stop()
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
+        client_id = analyzed_movies_batch.client_id
+        self._revenue_budget_by_sentiment[client_id] = self._revenue_budget_by_sentiment.get(client_id, {})
         for analyzed_movie in analyzed_movies_batch.get_items():
             revenue, budget, sentiment = analyzed_movie.revenue, analyzed_movie.budget, analyzed_movie.sentiment
             if revenue == 0 or budget == 0:
                 continue
-            revenue_sum, budget_sum = self.revenue_budget_by_sentiment.get(sentiment, (0, 0))
+            revenue_sum, budget_sum = self._revenue_budget_by_sentiment[client_id].get(sentiment, (0, 0))
             revenue_sum += revenue
             budget_sum += budget
-            self.revenue_budget_by_sentiment[sentiment] = (revenue_sum, budget_sum)
+            self._revenue_budget_by_sentiment[client_id][sentiment] = (revenue_sum, budget_sum)
     
     def __get_avgs_rate_revenue_budget_by_sentiment(self, client_id):
         avgs_rate_revenue_budget = []
-        for sentiment, (revenue, budget) in self.revenue_budget_by_sentiment.items():
+        for sentiment, (revenue, budget) in self._revenue_budget_by_sentiment[client_id].items():
             avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, sentiment, revenue/budget)
             avgs_rate_revenue_budget.append(avg_rate_revenue_budget)
         return avgs_rate_revenue_budget
