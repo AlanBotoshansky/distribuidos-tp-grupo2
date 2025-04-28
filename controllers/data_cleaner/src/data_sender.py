@@ -8,7 +8,7 @@ class DataSender:
     def __init__(self, data_queue, output_exchanges):
         self._data_queue = data_queue
         self._output_exchanges = output_exchanges
-        self._current_exchange_i = 0
+        self._current_exchange_i = {}
         self._middleware = Middleware()
         self._shutdown_requested = False
       
@@ -22,13 +22,14 @@ class DataSender:
     def send_data(self):
         while not self._shutdown_requested:
             msg = self._data_queue.get()
+            self._current_exchange_i[msg.client_id] = self._current_exchange_i.get(msg.client_id, 0)
             if not msg:
                 logging.info("action: stop_sending | result: success")
                 break
-            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._output_exchanges[self._current_exchange_i])
+            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._output_exchanges[self._current_exchange_i[msg.client_id]])
             if msg.packet_type() == PacketType.EOF:
-                self._current_exchange_i += 1
-                if self._current_exchange_i >= len(self._output_exchanges):
+                self._current_exchange_i[msg.client_id] += 1
+                if self._current_exchange_i[msg.client_id] >= len(self._output_exchanges):
                     logging.info("action: stop_sending | result: success")
-                    break
+                    self._current_exchange_i.pop(msg.client_id)
         self._middleware.stop()

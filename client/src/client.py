@@ -41,7 +41,7 @@ class Client:
         """
         if signalnum == signal.SIGTERM:
             logging.info('action: signal_received | result: success | signal: SIGTERM')
-            self._shutdown()
+            self.__shutdown()
             
     def __close_socket(self, socket_to_close, socket_name):
         try:
@@ -76,14 +76,25 @@ class Client:
         for num_query in self._result_files:
             self.__close_result_file(num_query)
     
-    def _shutdown(self):
+    def __shutdown(self):
         self.__close_socket(self.data_socket, "data_socket")
         self.__close_socket(self.results_socket, "results_socket")
         self.__close_all_result_files()
             
         self.results_receiver.join()
+        
+    def __receive_and_send_id(self):
+        try:
+            logging.info("action: receive_id | result: in_progress")
+            id = communication.receive_message(self.data_socket)
+            logging.info(f"action: receive_id | result: success | id: {id}")
+            logging.info("action: send_id | result: in_progress")
+            communication.send_message(self.results_socket, id)
+            logging.info(f"action: send_id | result: success | id: {id}")
+        except OSError as e:
+            logging.error(f"action: send_id | result: fail | error: {e}")
     
-    def _send_file(self, file_path, batch_max_size=1):
+    def __send_file(self, file_path, batch_max_size=1):
         batch = []
         with open(file_path) as file:
             next(file)
@@ -96,18 +107,21 @@ class Client:
         if batch:
             communication.send_lines(self.data_socket, batch)
 
-    def _send_data(self):
-        self._send_file(self._movies_path, batch_max_size=self._movies_batch_max_size)
-        communication.send_message(self.data_socket, communication.EOF)
-        logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
-        self._send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
-        communication.send_message(self.data_socket, communication.EOF)
-        logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
-        self._send_file(self._credits_path, batch_max_size=self._credits_batch_max_size)
-        communication.send_message(self.data_socket, communication.EOF)
-        logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
+    def __send_data(self):
+        try:
+            self.__send_file(self._movies_path, batch_max_size=self._movies_batch_max_size)
+            communication.send_message(self.data_socket, communication.EOF)
+            logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
+            self.__send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
+            communication.send_message(self.data_socket, communication.EOF)
+            logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
+            self.__send_file(self._credits_path, batch_max_size=self._credits_batch_max_size)
+            communication.send_message(self.data_socket, communication.EOF)
+            logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
+        except OSError as e:
+            logging.error(f"Error while sending data: {e}")
         
-    def _receive_results(self, results_socket):
+    def __receive_results(self, results_socket):
         self.__create_results_dir()
         
         start_time = datetime.now()
@@ -134,7 +148,7 @@ class Client:
         except OSError as e:
             logging.error(f"Error while connecting to results socket: {e}")
             return
-        self.results_receiver = mp.Process(target=self._receive_results, args=(self.results_socket,))
+        self.results_receiver = mp.Process(target=self.__receive_results, args=(self.results_socket,))
         self.results_receiver.start()
         
         logging.info(f"Connecting to server at {self._server_ip_data}:{self._server_port_data}")
@@ -144,10 +158,8 @@ class Client:
         except OSError as e:
             logging.error(f"Error while connecting to data socket: {e}")
         
-        try:    
-            self._send_data()
-            self.__close_socket(self.data_socket, "data_socket")
-        except Exception as e:
-            logging.error(f"Error while sending data: {e}")
+        self.__receive_and_send_id()
+        self.__send_data()      
+        self.__close_socket(self.data_socket, "data_socket")
         
         self.results_receiver.join()

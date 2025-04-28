@@ -2,7 +2,6 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.packet_serde import PacketSerde
-from messages.packet_type import PacketType
 
 class QueryResultsHandler:
     def __init__(self, num_query, input_queues, results_queue):
@@ -23,7 +22,7 @@ class QueryResultsHandler:
         result = [self._num_query]
         query_result = msg.to_csv_lines()
         result.extend(query_result)
-        self._results_queue.put(result)
+        self._results_queue.put((msg.client_id, result))
         
     def run(self):
         self._middleware.handle_messages()

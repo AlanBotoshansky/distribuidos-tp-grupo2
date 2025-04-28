@@ -11,7 +11,8 @@ class ResultsHandler:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._shutdown_requested = False
-        self._client_sock = None
+        self._manager = mp.Manager()
+        self._client_socks = self._manager.dict()
         self._results_queue = mp.Queue()
         self._input_queues = input_queues
         self._sender_process = None
@@ -28,18 +29,23 @@ class ResultsHandler:
             self._shutdown_requested = True
             self.__cleanup()
             
+    def __close_socket(self, socket_to_close, socket_name):
+        try:
+            logging.info(f'action: close_{socket_name} | result: in_progress')
+            socket_to_close.shutdown(socket.SHUT_RDWR)
+            socket_to_close.close()
+            logging.info(f'action: close_{socket_name} | result: success')
+        except OSError:
+            logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
+            
     def __cleanup(self):
         """
         Cleanup server resources during shutdown
         """
         self._results_queue.put(None)
-        try:    
-            logging.info("action: close_client_socket | result: in_progress") 
-            self._client_sock.shutdown(socket.SHUT_RDWR)
-            self._client_sock.close()
-            logging.info('action: close_client_socket | result: success')
-        except OSError as e:
-            logging.error(f"action: close_client_socket | result: fail | error: {e}")  
+        for client_id, client_sock in self._client_socks.items():
+            self.__close_socket(client_sock, f"client_{client_id}_socket") 
+                
         if self._sender_process:
             self._sender_process.join()
             logging.info("action: sender_process_finished | result: success")
@@ -48,14 +54,8 @@ class ResultsHandler:
             query_results_handler.terminate()
             query_results_handler.join()
             logging.info("action: query_results_handler_terminated | result: success")
-        
-        try:
-            logging.info('action: close_server_socket | result: in_progress')
-            self._server_socket.shutdown(socket.SHUT_RDWR)
-            self._server_socket.close()
-            logging.info('action: close_server_socket | result: success')
-        except OSError as e:
-            logging.error(f"action: close_server_socket | result: fail | error: {e}")
+
+        self.__close_socket(self._server_socket, "server_socket")
 
     def __accept_new_connection(self):
         """
@@ -71,30 +71,46 @@ class ResultsHandler:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
     
-    def __send_results(self, client_sock):
+    def __send_results(self):
         while True:
-            result = self._results_queue.get()
-            if not result:
+            client_result = self._results_queue.get()
+            if not client_result:
                 logging.info("action: stop_sending | result: success")
                 return
+            client_id, result = client_result
             try:
+                if client_id not in self._client_socks:
+                    logging.info(f"action: send_results | result: fail | error: client {client_id} not found")
+                    continue
+                client_sock = self._client_socks[client_id]
                 communication.send_lines(client_sock, result)
             except OSError as e:
                 logging.error(f"action: send_results | result: fail | error: {e}")
                 break
     
+    def __start_sender_process(self):
+        self._sender_process = mp.Process(target=self.__send_results)
+        self._sender_process.start()
+    
     def __handle_query(self, num_query, input_queues, results_queue):
         query_results_handler = QueryResultsHandler(num_query, input_queues, results_queue)
         query_results_handler.run()
-    
-    def __handle_client_connection(self, client_sock):
-        self._sender_process = mp.Process(target=self.__send_results, args=(client_sock,), daemon=True)
-        self._sender_process.start()
+        
+    def __start_query_results_handlers(self):
         for i, input_queue in enumerate(self._input_queues):
             num_query = i + 1
-            process = mp.Process(target=self.__handle_query, args=(num_query, [input_queue], self._results_queue), daemon=True)
+            process = mp.Process(target=self.__handle_query, args=(num_query, [input_queue], self._results_queue))
             process.start()
             self._query_results_handlers.append(process)
+    
+    def __handle_client_connection(self, client_sock):
+        client_id = communication.receive_message(client_sock)
+        if not client_id.isdecimal():
+            logging.error(f"action: receive_client_id  | result: fail | error: Received invalid client id: {client_id}")
+            self.__close_socket(client_sock, f"client_{client_id}_socket")
+            return
+        client_id = int(client_id)
+        self._client_socks[client_id] = client_sock
     
     def run(self):
         """
@@ -105,6 +121,9 @@ class ResultsHandler:
         finishes, servers starts to accept new connections again.
         The loop will continue until a SIGTERM signal is received.
         """
+        self.__start_sender_process()
+        self.__start_query_results_handlers()
+        
         while not self._shutdown_requested:
             try:
                 client_sock = self.__accept_new_connection()

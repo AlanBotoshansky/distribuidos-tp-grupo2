@@ -98,6 +98,8 @@ class DataCleaner:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
+        communication.send_message(client_sock, str(client_id))
+        
         while not self._shutdown_requested:
             try:
                 msg = communication.receive_message(client_sock)
@@ -118,7 +120,7 @@ class DataCleaner:
                 movies_batch = MoviesBatch.from_csv_lines(client_id, movies_csv_lines)
                 self._data_queue.put(movies_batch)
             except InvalidLineError as e:
-                # logging.error(f"action: handle_message | result: fail | error: {e}")
+                logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return
         elif self._cleaning_file == FileType.RATINGS:
             try:
@@ -126,7 +128,7 @@ class DataCleaner:
                 ratings_batch = RatingsBatch.from_csv_lines(client_id, ratings_csv_lines)
                 self._data_queue.put(ratings_batch)
             except InvalidLineError as e:
-                # logging.error(f"action: handle_message | result: fail | error: {e}")
+                logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return
         elif self._cleaning_file == FileType.CREDITS:
             try:
@@ -134,7 +136,7 @@ class DataCleaner:
                 credits_batch = CreditsBatch.from_csv_lines(client_id, credits_csv_lines)
                 self._data_queue.put(credits_batch)
             except InvalidLineError as e:
-                logging.error(f"action: handle_message | result: fail | error: {e}")
+                logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return
 
     def __send_data(self):
