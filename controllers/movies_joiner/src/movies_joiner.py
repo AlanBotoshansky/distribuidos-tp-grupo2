@@ -117,6 +117,11 @@ class MoviesJoiner:
             log_action_prefix="credits_batch"
         )
         
+    def __clean_client_state(self, client_id):
+        self._all_movies_received_of_clients.remove(client_id)
+        if client_id in self._movies:
+            self._movies.pop(client_id)
+        
     def __handle_eof(self, eof):
         client_id = eof.client_id
         if client_id in self._should_reenqueue_eof_of_clients:
@@ -129,6 +134,7 @@ class MoviesJoiner:
             if min(eof.seen_ids) == self._id:
                 self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
                 logging.info("action: sent_eof | result: success")
+            self.__clean_client_state(client_id)
         else:
             exchange = "_".join(self._input_queue_to_join[1].split("_")[:-1] + [str(self.__next_id())])
             self._middleware.send_message(PacketSerde.serialize(eof), exchange=exchange)
