@@ -48,6 +48,10 @@ class AvgRateRevenueBudgetCalculator:
             avgs_rate_revenue_budget.append(avg_rate_revenue_budget)
         return avgs_rate_revenue_budget
     
+    def __clean_client_state(self, client_id):
+        if client_id in self._revenue_budget_by_sentiment:
+            self._revenue_budget_by_sentiment.pop(client_id)
+    
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.ANALYZED_MOVIES_BATCH:
@@ -60,6 +64,7 @@ class AvgRateRevenueBudgetCalculator:
                 logging.debug(f"action: sent_avg_rate_revenue_budget | result: success | avg_rate_revenue_budget: {avg_rate_revenue_budget}")
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
+            self.__clean_client_state(eof.client_id)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
