@@ -56,6 +56,10 @@ class MostLeastRatedMoviesCalculator:
         least_rated_movie = MovieRating(min_id, self._movie_ratings[client_id][min_id][0], min_avg_rating)
         return MovieRatingsBatch(client_id, [most_rated_movie, least_rated_movie])
     
+    def __clean_client_state(self, client_id):
+        if client_id in self._movie_ratings:
+            self._movie_ratings.pop(client_id)
+    
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE_RATINGS_BATCH:
@@ -68,6 +72,7 @@ class MostLeastRatedMoviesCalculator:
             logging.debug(f"action: sent_movie_ratings_batch | result: success | movie_ratings_batch: {movie_ratings_batch_result}")
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
+            self.__clean_client_state(eof.client_id)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
