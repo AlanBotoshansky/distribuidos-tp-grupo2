@@ -42,6 +42,10 @@ class TopActorsParticipationCalculator:
         top_actors_participations = sorted_actors_participations[:self._top_n_actors_participation]
         return top_actors_participations
     
+    def __clean_client_state(self, client_id):
+        if client_id in self._actors_participation:
+            self._actors_participation.pop(client_id)
+    
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE_CREDITS_BATCH:
@@ -54,6 +58,7 @@ class TopActorsParticipationCalculator:
                 self._middleware.send_message(PacketSerde.serialize(actor_participation))
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
+            self.__clean_client_state(eof.client_id)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
