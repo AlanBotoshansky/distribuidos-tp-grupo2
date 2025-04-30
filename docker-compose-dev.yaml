@@ -27,8 +27,25 @@ services:
     - ./controllers/results_handler/config.ini:/config.ini
     networks:
     - testing_net
-  client:
-    container_name: client
+  client_1:
+    container_name: client_1
+    image: client:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - RESULTS_DIR=/results
+    volumes:
+    - ./client/config.ini:/config.ini
+    - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
+    - ./datasets/ratings.csv:/datasets/ratings.csv
+    - ./datasets/credits.csv:/datasets/credits.csv
+    - ./results:/results
+    networks:
+    - testing_net
+    depends_on:
+    - data_cleaner
+    - results_handler
+  client_2:
+    container_name: client_2
     image: client:latest
     environment:
     - PYTHONUNBUFFERED=1
@@ -54,24 +71,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
     - INPUT_QUEUES=[("movies_q1", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_produced_in_argentina_and_spain_2:
-    container_name: movies_filter_produced_in_argentina_and_spain_2
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=["Argentina", "Spain"]
-    - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
-    - INPUT_QUEUES=[("movies_q1", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -102,24 +103,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
     - INPUT_QUEUES=[("movies_q2", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_by_one_production_country_2:
-    container_name: movies_filter_by_one_production_country_2
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=1
-    - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
-    - INPUT_QUEUES=[("movies_q2", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_by_one_country
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -146,24 +131,8 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
     - INPUT_QUEUES=[("movies_q3_q4", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_filter/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_filter_produced_in_argentina_2:
-    container_name: movies_filter_produced_in_argentina_2
-    image: movies_filter:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FILTER_FIELD=production_countries
-    - FILTER_VALUES=["Argentina"]
-    - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
-    - INPUT_QUEUES=[("movies_q3_q4", "movies")]
-    - OUTPUT_EXCHANGE=movies_produced_in_argentina
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_filter/config.ini:/config.ini
     networks:
@@ -189,27 +158,12 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
+    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
     - OUTPUT_EXCHANGE_PREFIXES=["movies_produced_in_argentina_released_after_2000_q3",
       "movies_produced_in_argentina_released_after_2000_q4"]
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/router/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_router_by_id_2:
-    container_name: movies_router_by_id_2
-    image: router:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
-    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIXES=["movies_produced_in_argentina_released_after_2000_q3",
-      "movies_produced_in_argentina_released_after_2000_q4"]
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/router/config.ini:/config.ini
     networks:
@@ -219,10 +173,10 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
+    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("ratings", "ratings")]
     - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=3
     - ID=1
     volumes:
     - ./controllers/router/config.ini:/config.ini
@@ -233,11 +187,25 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
+    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("ratings", "ratings")]
     - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=3
     - ID=2
+    volumes:
+    - ./controllers/router/config.ini:/config.ini
+    networks:
+    - testing_net
+  ratings_router_by_movie_id_3:
+    container_name: ratings_router_by_movie_id_3
+    image: router:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - DESTINATION_NODES_AMOUNT=1
+    - INPUT_QUEUES=[("ratings", "ratings")]
+    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
+    - CLUSTER_SIZE=3
+    - ID=3
     volumes:
     - ./controllers/router/config.ini:/config.ini
     networks:
@@ -250,22 +218,8 @@ services:
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_1", "movies_produced_in_argentina_released_after_2000_q3_1"),
       ("ratings_1", "ratings_1")]
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_joiner/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_ratings_joiner_2:
-    container_name: movies_ratings_joiner_2
-    image: movies_joiner:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_2", "movies_produced_in_argentina_released_after_2000_q3_2"),
-      ("ratings_2", "ratings_2")]
-    - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
@@ -286,7 +240,7 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
+    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("credits", "credits")]
     - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
@@ -300,7 +254,7 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=2
+    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("credits", "credits")]
     - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
@@ -317,22 +271,8 @@ services:
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_1", "movies_produced_in_argentina_released_after_2000_q4_1"),
       ("credits_1", "credits_1")]
     - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_joiner/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_credits_joiner_2:
-    container_name: movies_credits_joiner_2
-    image: movies_joiner:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_2", "movies_produced_in_argentina_released_after_2000_q4_2"),
-      ("credits_2", "credits_2")]
-    - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
-    - CLUSTER_SIZE=2
-    - ID=2
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
@@ -357,36 +297,8 @@ services:
     - FIELD_TO_ANALYZE=overview
     - INPUT_QUEUES=[("movies_q5", "movies")]
     - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=3
+    - CLUSTER_SIZE=1
     - ID=1
-    volumes:
-    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_sentiment_analyzer_2:
-    container_name: movies_sentiment_analyzer_2
-    image: movies_sentiment_analyzer:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FIELD_TO_ANALYZE=overview
-    - INPUT_QUEUES=[("movies_q5", "movies")]
-    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=3
-    - ID=2
-    volumes:
-    - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
-    networks:
-    - testing_net
-  movies_sentiment_analyzer_3:
-    container_name: movies_sentiment_analyzer_3
-    image: movies_sentiment_analyzer:latest
-    environment:
-    - PYTHONUNBUFFERED=1
-    - FIELD_TO_ANALYZE=overview
-    - INPUT_QUEUES=[("movies_q5", "movies")]
-    - OUTPUT_EXCHANGE=movies_sentiment_analyzed
-    - CLUSTER_SIZE=3
-    - ID=3
     volumes:
     - ./controllers/movies_sentiment_analyzer/config.ini:/config.ini
     networks:
