@@ -232,30 +232,37 @@ def generate_results_handler():
         ]
     )
 
-def generate_client():
-    """Generate client service configuration"""
-    return generate_service(
-        name="client",
-        image="client",
-        environment=[
-            "PYTHONUNBUFFERED=1",
-            "RESULTS_DIR=/results",
-        ],
-        volumes=[
-            "./client/config.ini:/config.ini",
-            "./datasets/movies_metadata.csv:/datasets/movies_metadata.csv",
-            "./datasets/ratings.csv:/datasets/ratings.csv",
-            "./datasets/credits.csv:/datasets/credits.csv",
-            "./results:/results"
-        ],
-        networks=[
-            "testing_net"
-        ],
-        depends_on=[
-            "data_cleaner",
-            "results_handler"
-        ]
-    )
+def generate_clients(n):
+    """Generate client service configuration for multiple clients"""
+    clients = {}
+    n = int(n)
+    
+    for i in range(1, n + 1):
+        client_name = f"client_{i}"
+        clients[client_name] = generate_service(
+            name=client_name,
+            image="client",
+            environment=[
+                "PYTHONUNBUFFERED=1",
+                "RESULTS_DIR=/results",
+            ],
+            volumes=[
+                "./client/config.ini:/config.ini",
+                "./datasets/movies_metadata.csv:/datasets/movies_metadata.csv",
+                "./datasets/ratings.csv:/datasets/ratings.csv",
+                "./datasets/credits.csv:/datasets/credits.csv",
+                "./results:/results"
+            ],
+            networks=[
+                "testing_net"
+            ],
+            depends_on=[
+                "data_cleaner",
+                "results_handler"
+            ]
+        )
+    
+    return clients
 
 def generate_movies_filter_argentina_spain_cluster(cluster_size):
     """Generate the movies filter services for Argentina and Spain filtering"""
@@ -480,8 +487,9 @@ def generate_docker_compose(config_params):
     
     docker_compose["services"]["data_cleaner"] = generate_data_cleaner()
     docker_compose["services"]["results_handler"] = generate_results_handler()
-    docker_compose["services"]["client"] = generate_client()
-    
+    clients = generate_clients(config_params["clients"])
+    docker_compose["services"].update(clients)
+
     # Query 1
     movies_filter_argentina_spain_cluster = generate_movies_filter_argentina_spain_cluster(
         config_params["movies_filter_produced_in_argentina_and_spain"]
