@@ -152,16 +152,16 @@ class Client:
         
     def run(self):
         try:
-            self._results_socket = self.__connect_to_server(self._server_ip_results, self._server_port_results)
-        except OSError as e:
-            logging.error(f"Error while connecting to results socket: {e}")
-            return
-        
-        try:
             self._data_socket = self.__connect_to_server(self._server_ip_data, self._server_port_data)
         except OSError as e:
             logging.error(f"Error while connecting to data socket: {e}")
-            self.__close_socket(self._results_socket, "results_socket")
+            return
+        
+        try:
+            self._results_socket = self.__connect_to_server(self._server_ip_results, self._server_port_results)
+        except OSError as e:
+            logging.error(f"Error while connecting to results socket: {e}")
+            self.__close_socket(self._data_socket, "data_socket")
             return
         
         try:

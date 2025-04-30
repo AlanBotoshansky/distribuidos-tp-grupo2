@@ -9,8 +9,7 @@ class FileType(IntEnum):
         return FileType((self.value + 1) % len(FileType))
 
 class ClientState:
-    def __init__(self, socket):
-        self.socket = socket
+    def __init__(self):
         self._current_data_file = FileType.MOVIES
         
     def is_sending_movies(self):
