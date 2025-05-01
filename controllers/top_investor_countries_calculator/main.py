@@ -27,6 +27,7 @@ def initialize_config():
         config_params["top_n_investor_countries"] = int(os.getenv('TOP_N_INVESTOR_COUNTRIES'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
+        config_params["control_queue"] = ast.literal_eval(os.getenv('CONTROL_QUEUE'))
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -53,14 +54,15 @@ def main():
     top_n_investor_countries = config_params["top_n_investor_countries"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
+    control_queue = config_params["control_queue"]
     
     initialize_log(logging_level)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_investor_countries: {top_n_investor_countries} | input_queues: {input_queues} | output_exchange: {output_exchange}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_investor_countries: {top_n_investor_countries} | input_queues: {input_queues} | output_exchange: {output_exchange} | control_queue: {control_queue}")
 
-    top_investor_countries_calculator = TopInvestorCountriesCalculator(top_n_investor_countries, input_queues, output_exchange)
+    top_investor_countries_calculator = TopInvestorCountriesCalculator(top_n_investor_countries, input_queues, output_exchange, control_queue)
     top_investor_countries_calculator.run()
 
 if __name__ == "__main__":

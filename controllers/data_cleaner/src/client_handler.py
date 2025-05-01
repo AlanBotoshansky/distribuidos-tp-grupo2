@@ -6,14 +6,15 @@ from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.credits_batch import CreditsBatch
 from messages.eof import EOF
+from messages.client_disconnected import ClientDisconnected
 from src.utils import close_socket
 from src.client_state import ClientState
 
 class ClientHandler:
-    def __init__(self, client_id, client_sock, data_queue, receiver_pool_semaphore):
+    def __init__(self, client_id, client_sock, messages_queue, receiver_pool_semaphore):
         self._client_id = client_id
         self._client_sock = client_sock
-        self._data_queue = data_queue
+        self._messages_queue = messages_queue
         self._receiver_pool_semaphore = receiver_pool_semaphore
         self._client_state = ClientState()
         self._shutdown_requested = False
@@ -38,19 +39,20 @@ class ClientHandler:
             except (OSError, ConnectionError) as e:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
                 close_socket(self._client_sock, f"client_{self._client_id}_socket")
+                self._messages_queue.put(ClientDisconnected(self._client_id))
                 break
         self._receiver_pool_semaphore.release()
         
     def __handle_client_message(self, msg):
         if msg == communication.EOF:
-            self._data_queue.put(EOF(self._client_id))
+            self._messages_queue.put(EOF(self._client_id))
             self._client_state.finished_sending_file()
             return
         if self._client_state.is_sending_movies():
             try:
                 movies_csv_lines = communication.parse_lines_message(msg)
                 movies_batch = MoviesBatch.from_csv_lines(self._client_id, movies_csv_lines)
-                self._data_queue.put(movies_batch)
+                self._messages_queue.put(movies_batch)
             except InvalidLineError as e:
                 logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return
@@ -58,7 +60,7 @@ class ClientHandler:
             try:
                 ratings_csv_lines = communication.parse_lines_message(msg)
                 ratings_batch = RatingsBatch.from_csv_lines(self._client_id, ratings_csv_lines)
-                self._data_queue.put(ratings_batch)
+                self._messages_queue.put(ratings_batch)
             except InvalidLineError as e:
                 logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return
@@ -66,7 +68,7 @@ class ClientHandler:
             try:
                 credits_csv_lines = communication.parse_lines_message(msg)
                 credits_batch = CreditsBatch.from_csv_lines(self._client_id, credits_csv_lines)
-                self._data_queue.put(credits_batch)
+                self._messages_queue.put(credits_batch)
             except InvalidLineError as e:
                 logging.debug(f"action: handle_message | result: fail | error: {e}")
                 return

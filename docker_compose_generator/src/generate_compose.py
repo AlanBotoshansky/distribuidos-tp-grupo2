@@ -1,3 +1,5 @@
+CONTROL_EXCHANGE = "control"
+
 def generate_service(name, image, container_name=None, environment=None, volumes=None, networks=None, depends_on=None):
     """
     Generic function to generate a service configuration for docker-compose.
@@ -144,7 +146,8 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
                 f"INPUT_QUEUES={input_queues}",
                 f"OUTPUT_EXCHANGE={output_exchange}",
                 f"CLUSTER_SIZE={cluster_size}",
-                f"ID={i}"
+                f"ID={i}",
+                f"CONTROL_QUEUE=('{CONTROL_EXCHANGE}_{service_name}', '{CONTROL_EXCHANGE}')"
             ],
             volumes=[
                 f"./controllers/movies_joiner/config.ini:/config.ini"
@@ -206,6 +209,7 @@ def generate_data_cleaner():
             "MOVIES_EXCHANGE=movies",
             "RATINGS_EXCHANGE=ratings",
             "CREDITS_EXCHANGE=credits",
+            f"CONTROL_EXCHANGE={CONTROL_EXCHANGE}"
         ],
         volumes=[
             "./controllers/data_cleaner/config.ini:/config.ini"
@@ -244,14 +248,14 @@ def generate_clients(n):
             image="client",
             environment=[
                 "PYTHONUNBUFFERED=1",
-                "RESULTS_DIR=/results",
+                f"RESULTS_DIR=/results/client_{i}",
             ],
             volumes=[
                 "./client/config.ini:/config.ini",
                 "./datasets/movies_metadata.csv:/datasets/movies_metadata.csv",
                 "./datasets/ratings.csv:/datasets/ratings.csv",
                 "./datasets/credits.csv:/datasets/credits.csv",
-                "./results:/results"
+                f"./results/client_{i}:/results/client_{i}"
             ],
             networks=[
                 "testing_net"
@@ -309,7 +313,8 @@ def generate_top_investor_countries_calculator():
             "PYTHONUNBUFFERED=1",
             "TOP_N_INVESTOR_COUNTRIES=5",
             "INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]",
-            "OUTPUT_EXCHANGE=top_investor_countries"
+            "OUTPUT_EXCHANGE=top_investor_countries",
+            f"CONTROL_QUEUE=('{CONTROL_EXCHANGE}_top_investor_countries_calculator', '{CONTROL_EXCHANGE}')"
         ],
         volumes=[
             "./controllers/top_investor_countries_calculator/config.ini:/config.ini"
@@ -380,7 +385,8 @@ def generate_most_least_rated_movies_calculator():
         environment=[
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]",
-            "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000"
+            "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000",
+            f"CONTROL_QUEUE=('{CONTROL_EXCHANGE}_most_least_rated_movies_calculator', '{CONTROL_EXCHANGE}')"
         ],
         volumes=[
             "./controllers/most_least_rated_movies_calculator/config.ini:/config.ini"
@@ -418,7 +424,8 @@ def generate_top_actors_participation_calculator():
             "PYTHONUNBUFFERED=1",
             "TOP_N_ACTORS_PARTICIPATION=10",
             "INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]",
-            "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000"
+            "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000",
+            f"CONTROL_QUEUE=('{CONTROL_EXCHANGE}_top_actors_participation_calculator', '{CONTROL_EXCHANGE}')"
         ],
         volumes=[
             "./controllers/top_actors_participation_calculator/config.ini:/config.ini"
@@ -446,7 +453,8 @@ def generate_avg_rate_revenue_budget_calculator():
         environment=[
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]",
-            "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment"
+            "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment",
+            f"CONTROL_QUEUE=('{CONTROL_EXCHANGE}_avg_rate_revenue_budget_calculator', '{CONTROL_EXCHANGE}')"
         ],
         volumes=[
             "./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini"

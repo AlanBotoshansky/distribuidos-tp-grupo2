@@ -3,22 +3,23 @@ import logging
 import signal
 import multiprocessing as mp
 from src.utils import close_socket
-from src.data_sender import DataSender
+from src.messages_sender import MessagesSender
 from src.client_handler import ClientHandler
 
-DATA_QUEUE_SIZE = 10000
+MESSAGES_QUEUE_SIZE = 10000
 
 class DataCleaner:
-    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, max_concurrent_clients):
+    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, control_exchange, max_concurrent_clients):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._movies_exchange = movies_exchange
         self._ratings_exchange = ratings_exchange
         self._credits_exchange = credits_exchange
+        self._control_exchange = control_exchange
         self._max_concurrent_clients = max_concurrent_clients
         self._shutdown_requested = False
-        self._data_queue = mp.Queue(maxsize=DATA_QUEUE_SIZE)
+        self._messages_queue = mp.Queue(maxsize=MESSAGES_QUEUE_SIZE)
         self._sender_process = None
         self._receiver_processes = []
         self._manager = mp.Manager()
@@ -69,16 +70,16 @@ class DataCleaner:
         return client_id, client_sock
 
     def __handle_client(self, client_id, client_sock):
-        client_handler = ClientHandler(client_id, client_sock, self._data_queue, self._receiver_pool_semaphore)
+        client_handler = ClientHandler(client_id, client_sock, self._messages_queue, self._receiver_pool_semaphore)
         client_handler.handle_client()
 
-    def __send_data(self):
-        exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
-        data_sender = DataSender(self._data_queue, exchanges)
-        data_sender.send_data()
+    def __send_messages(self):
+        data_exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
+        messages_sender = MessagesSender(self._messages_queue, data_exchanges, self._control_exchange)
+        messages_sender.send_messages()
     
     def run(self):
-        self._sender_process = mp.Process(target=self.__send_data)
+        self._sender_process = mp.Process(target=self.__send_messages)
         self._sender_process.start()
         while not self._shutdown_requested:
             self._receiver_pool_semaphore.acquire()

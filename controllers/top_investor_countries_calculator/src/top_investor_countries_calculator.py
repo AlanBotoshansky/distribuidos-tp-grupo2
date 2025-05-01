@@ -5,12 +5,14 @@ from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.investor_country import InvestorCountry
+from stateful_controller.stateful_controller import StatefulController
 
-class TopInvestorCountriesCalculator:
-    def __init__(self, top_n_investor_countries, input_queues, output_exchange):
+class TopInvestorCountriesCalculator(StatefulController):
+    def __init__(self, top_n_investor_countries, input_queues, output_exchange, control_queue):
         self._top_n_investor_countries = top_n_investor_countries
         self._input_queues = input_queues
         self._output_exchange = output_exchange
+        self._control_queue = control_queue
         self._middleware = None
         self._investment_by_country = {}
         
@@ -42,7 +44,7 @@ class TopInvestorCountriesCalculator:
         top_investor_countries = sorted_investments[:self._top_n_investor_countries]
         return top_investor_countries
     
-    def __clean_client_state(self, client_id):
+    def _clean_client_state(self, client_id):
         if client_id in self._investment_by_country:
             self._investment_by_country.pop(client_id)
     
@@ -58,12 +60,13 @@ class TopInvestorCountriesCalculator:
                 self._middleware.send_message(PacketSerde.serialize(investor_country))
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
-            self.__clean_client_state(eof.client_id)
+            self._clean_client_state(eof.client_id)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
+        input_queues_and_callback_functions.append((self._control_queue[0], self._control_queue[1], self._handle_control_packet))
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
                                      )
