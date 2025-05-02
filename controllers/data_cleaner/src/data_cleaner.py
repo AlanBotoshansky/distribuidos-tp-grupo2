@@ -9,14 +9,13 @@ from src.client_handler import ClientHandler
 MESSAGES_QUEUE_SIZE = 10000
 
 class DataCleaner:
-    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, control_exchange, max_concurrent_clients):
+    def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, max_concurrent_clients):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._movies_exchange = movies_exchange
         self._ratings_exchange = ratings_exchange
         self._credits_exchange = credits_exchange
-        self._control_exchange = control_exchange
         self._max_concurrent_clients = max_concurrent_clients
         self._shutdown_requested = False
         self._messages_queue = mp.Queue(maxsize=MESSAGES_QUEUE_SIZE)
@@ -75,7 +74,7 @@ class DataCleaner:
 
     def __send_messages(self):
         data_exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
-        messages_sender = MessagesSender(self._messages_queue, data_exchanges, self._control_exchange)
+        messages_sender = MessagesSender(self._messages_queue, data_exchanges)
         messages_sender.send_messages()
     
     def run(self):

@@ -84,11 +84,11 @@ class Router:
             log_action_prefix="credits_batch"
         )
         
-    def __send_eof_to_all_destination_nodes(self, client_id):
+    def __send_message_to_all_destination_nodes(self, msg):
         for output_exchange_prefix in self._output_exchange_prefixes:
             for i in range(1, self.destination_nodes_amount + 1):
                 output_exchange = f"{output_exchange_prefix}_{i}"
-                self._middleware.send_message(PacketSerde.serialize(EOF(client_id)), exchange=output_exchange)
+                self._middleware.send_message(PacketSerde.serialize(msg), exchange=output_exchange)
                 logging.info(f"action: sent_eof | result: success | destination_id: {i}")
     
     def __handle_packet(self, packet):
@@ -106,9 +106,13 @@ class Router:
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
-                self.__send_eof_to_all_destination_nodes(eof.client_id)
+                self.__send_message_to_all_destination_nodes(EOF(eof.client_id))
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
+            self.__send_message_to_all_destination_nodes(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

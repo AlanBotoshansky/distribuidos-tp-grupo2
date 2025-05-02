@@ -10,16 +10,14 @@ from messages.movie_credit import MovieCredit
 from messages.movie_credits_batch import MovieCreditsBatch
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
-from stateful_controller.stateful_controller import StatefulController
 
-class MoviesJoiner(StatefulController):
-    def __init__(self, input_queues, output_exchange, cluster_size, id, control_queue):
+class MoviesJoiner:
+    def __init__(self, input_queues, output_exchange, cluster_size, id):
         self._input_queue_movies = input_queues[0]
         self._input_queue_to_join = input_queues[1]
         self._output_exchange = output_exchange
         self._cluster_size = cluster_size
         self._id = id
-        self._control_queue = control_queue
         self._middleware = None
         self._movies = {}
         self._all_movies_received_of_clients = set()
@@ -52,6 +50,11 @@ class MoviesJoiner(StatefulController):
         self._movies[client_id] = self._movies.get(client_id, {})
         for movie in movies_batch.get_items():
             self._movies[client_id][movie.id] = movie.title
+            
+    def __handle_client_disconnected(self, client_disconnected):
+        logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
+        self.__clean_client_state(client_disconnected.client_id)
+        self._middleware.send_message(PacketSerde.serialize(client_disconnected))
     
     def __handle_movies_batch_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -61,6 +64,9 @@ class MoviesJoiner(StatefulController):
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             self._all_movies_received_of_clients.add(eof.client_id)
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
@@ -119,7 +125,7 @@ class MoviesJoiner(StatefulController):
             log_action_prefix="credits_batch"
         )
         
-    def _clean_client_state(self, client_id):
+    def __clean_client_state(self, client_id):
         if client_id in self._all_movies_received_of_clients:
             self._all_movies_received_of_clients.remove(client_id)
         if client_id in self._movies:
@@ -139,7 +145,7 @@ class MoviesJoiner(StatefulController):
             if min(eof.seen_ids) == self._id:
                 self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
                 logging.info("action: sent_eof | result: success")
-            self._clean_client_state(client_id)
+            self.__clean_client_state(client_id)
         else:
             exchange = "_".join(self._input_queue_to_join[1].split("_")[:-1] + [str(self.__next_id())])
             self._middleware.send_message(PacketSerde.serialize(eof), exchange=exchange)
@@ -155,6 +161,9 @@ class MoviesJoiner(StatefulController):
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             self.__handle_eof(eof)
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
@@ -163,7 +172,6 @@ class MoviesJoiner(StatefulController):
             (self._input_queue_movies[0], self._input_queue_movies[1], self.__handle_movies_batch_packet),
             (self._input_queue_to_join[0], self._input_queue_to_join[1], self.__handle_batch_packet_to_join)
             ]
-        input_queues_and_callback_functions.append((self._control_queue[0], self._control_queue[1], self._handle_control_packet))
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
                                      )

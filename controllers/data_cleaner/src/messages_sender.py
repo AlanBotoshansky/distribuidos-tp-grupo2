@@ -6,11 +6,10 @@ from messages.packet_serde import PacketSerde
 import logging
 
 class MessagesSender:
-    def __init__(self, messages_queue, data_exchanges, control_exchange):
+    def __init__(self, messages_queue, exchanges):
         self._messages_queue = messages_queue
-        self._data_exchanges = data_exchanges
-        self._control_exchange = control_exchange
-        self._current_data_exchange_i = {}
+        self._exchanges = exchanges
+        self._current_exchange_i = {}
         self._middleware = Middleware()
         self._shutdown_requested = False
       
@@ -25,16 +24,18 @@ class MessagesSender:
         while not self._shutdown_requested:
             msg = self._messages_queue.get()
             if msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
-                self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._control_exchange)
+                for exchange in self._exchanges:
+                    self._middleware.send_message(PacketSerde.serialize(msg), exchange=exchange)
+                self._middleware.send_message(PacketSerde.serialize(msg))
                 continue
-            self._current_data_exchange_i[msg.client_id] = self._current_data_exchange_i.get(msg.client_id, 0)
+            self._current_exchange_i[msg.client_id] = self._current_exchange_i.get(msg.client_id, 0)
             if not msg:
                 logging.info("action: stop_sending | result: success")
                 break
-            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._data_exchanges[self._current_data_exchange_i[msg.client_id]])
+            self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._exchanges[self._current_exchange_i[msg.client_id]])
             if msg.packet_type() == PacketType.EOF:
-                self._current_data_exchange_i[msg.client_id] += 1
-                if self._current_data_exchange_i[msg.client_id] >= len(self._data_exchanges):
+                self._current_exchange_i[msg.client_id] += 1
+                if self._current_exchange_i[msg.client_id] >= len(self._exchanges):
                     logging.info("action: stop_sending | result: success")
-                    self._current_data_exchange_i.pop(msg.client_id)
+                    self._current_exchange_i.pop(msg.client_id)
         self._middleware.stop()

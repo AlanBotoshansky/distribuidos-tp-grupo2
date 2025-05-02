@@ -8,7 +8,6 @@ services:
     - MOVIES_EXCHANGE=movies
     - RATINGS_EXCHANGE=ratings
     - CREDITS_EXCHANGE=credits
-    - CONTROL_EXCHANGE=control
     volumes:
     - ./controllers/data_cleaner/config.ini:/config.ini
     networks:
@@ -118,7 +117,6 @@ services:
     - TOP_N_INVESTOR_COUNTRIES=5
     - INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]
     - OUTPUT_EXCHANGE=top_investor_countries
-    - CONTROL_QUEUE=('control_top_investor_countries_calculator', 'control')
     volumes:
     - ./controllers/top_investor_countries_calculator/config.ini:/config.ini
     networks:
@@ -222,7 +220,6 @@ services:
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=1
     - ID=1
-    - CONTROL_QUEUE=('control_movies_ratings_joiner_1', 'control')
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
@@ -234,7 +231,6 @@ services:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]
     - OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000
-    - CONTROL_QUEUE=('control_most_least_rated_movies_calculator', 'control')
     volumes:
     - ./controllers/most_least_rated_movies_calculator/config.ini:/config.ini
     networks:
@@ -277,7 +273,6 @@ services:
     - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=1
     - ID=1
-    - CONTROL_QUEUE=('control_movies_credits_joiner_1', 'control')
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
     networks:
@@ -290,7 +285,6 @@ services:
     - TOP_N_ACTORS_PARTICIPATION=10
     - INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]
     - OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000
-    - CONTROL_QUEUE=('control_top_actors_participation_calculator', 'control')
     volumes:
     - ./controllers/top_actors_participation_calculator/config.ini:/config.ini
     networks:
@@ -316,7 +310,6 @@ services:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]
     - OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment
-    - CONTROL_QUEUE=('control_avg_rate_revenue_budget_calculator', 'control')
     volumes:
     - ./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini
     networks:

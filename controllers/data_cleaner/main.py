@@ -28,7 +28,6 @@ def initialize_config():
         config_params["movies_exchange"] = os.getenv('MOVIES_EXCHANGE')
         config_params["ratings_exchange"] = os.getenv('RATINGS_EXCHANGE')
         config_params["credits_exchange"] = os.getenv('CREDITS_EXCHANGE')
-        config_params["control_exchange"] = os.getenv('CONTROL_EXCHANGE')
         config_params["max_concurrent_clients"] = int(os.getenv('MAX_CONCURRENT_CLIENTS', config["DEFAULT"]["MAX_CONCURRENT_CLIENTS"]))
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
@@ -58,7 +57,6 @@ def main():
     movies_exchange = config_params["movies_exchange"]
     ratings_exchange = config_params["ratings_exchange"]
     credits_exchange = config_params["credits_exchange"]
-    control_exchange = config_params["control_exchange"]
     max_concurrent_clients = config_params["max_concurrent_clients"]
 
     initialize_log(logging_level)
@@ -66,9 +64,9 @@ def main():
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
     logging.debug(f"action: config | result: success | port: {port} | "
-                  f"listen_backlog: {listen_backlog} | logging_level: {logging_level} | movies_exchange: {movies_exchange} | ratings_exchange: {ratings_exchange} | credits_exchange: {credits_exchange} | control_exchange: {control_exchange} | max_concurrent_clients: {max_concurrent_clients}")
+                  f"listen_backlog: {listen_backlog} | logging_level: {logging_level} | movies_exchange: {movies_exchange} | ratings_exchange: {ratings_exchange} | credits_exchange: {credits_exchange} | max_concurrent_clients: {max_concurrent_clients}")
 
-    data_cleaner = DataCleaner(port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, control_exchange, max_concurrent_clients)
+    data_cleaner = DataCleaner(port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, max_concurrent_clients)
     data_cleaner.run()
 
 if __name__ == "__main__":

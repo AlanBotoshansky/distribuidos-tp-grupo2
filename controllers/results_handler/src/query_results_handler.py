@@ -2,6 +2,7 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.packet_serde import PacketSerde
+from messages.packet_type import PacketType
 
 class QueryResultsHandler:
     def __init__(self, num_query, input_queues, results_queue):
@@ -19,6 +20,8 @@ class QueryResultsHandler:
             
     def __handle_result_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
+        if msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            return
         result = [self._num_query]
         query_result = msg.to_csv_lines()
         result.extend(query_result)

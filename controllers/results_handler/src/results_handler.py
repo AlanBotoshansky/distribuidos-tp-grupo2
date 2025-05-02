@@ -80,7 +80,7 @@ class ResultsHandler:
             client_id, result = client_result
             try:
                 if client_id not in self._client_socks:
-                    logging.info(f"action: send_results | result: fail | error: client {client_id} not found")
+                    logging.debug(f"action: send_results | result: fail | error: client {client_id} not found")
                     continue
                 client_sock = self._client_socks[client_id]
                 communication.send_lines(client_sock, result)
