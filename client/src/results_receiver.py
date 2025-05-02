@@ -14,9 +14,11 @@ QUERY_RESULTS_HEADERS = [
 ]
 
 class ResultsReceiver:
-    def __init__(self, results_dir, results_socket):
+    def __init__(self, id, results_dir, server_ip_results, server_port_results):
+        self._id = id
         self._results_dir = results_dir
-        self._results_socket = results_socket
+        self._server_ip_results = server_ip_results
+        self._server_port_results = server_port_results
         self._result_files = {}
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
@@ -40,6 +42,17 @@ class ResultsReceiver:
     def __shutdown(self):
         self.__close_socket(self._results_socket, "results_socket")
         self.__close_all_result_files()
+        
+    def __connect_to_server(self, server_ip, server_port):
+        logging.info(f"Connecting to server at {server_ip}:{server_port}")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((server_ip, server_port))
+        return sock
+    
+    def __send_id(self):
+        logging.info("action: send_id | result: in_progress")
+        communication.send_message(self._results_socket, self._id)
+        logging.info(f"action: send_id | result: success | id: {self._id}")
 
     def __create_results_dir(self):
         os.makedirs(self._results_dir, exist_ok=True)
@@ -64,7 +77,7 @@ class ResultsReceiver:
         for num_query in self._result_files:
             self.__close_result_file(num_query)
     
-    def receive_results(self):
+    def __receive_results(self):
         self.__create_results_dir()
         amount_queries_resolved = 0
         
@@ -87,3 +100,20 @@ class ResultsReceiver:
             except OSError as e:
                 logging.error(f"Error while receiving results: {e}")
                 return
+            
+    def run(self):
+        try:
+            self._results_socket = self.__connect_to_server(self._server_ip_results, self._server_port_results)
+        except OSError as e:
+            logging.error(f"Error while connecting to results socket: {e}")
+            return
+        
+        try:
+            self.__send_id()
+        except OSError as e:
+            logging.error(f"action: send_id | result: fail | error: {e}")
+            self.__close_socket(self._results_socket, "results_socket")
+            return
+        
+        self.__receive_results()
+        self.__close_socket(self._results_socket, "results_socket")

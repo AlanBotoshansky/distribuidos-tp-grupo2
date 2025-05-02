@@ -1,3 +1,4 @@
+import socket
 import logging
 import signal
 import communication.communication as communication
@@ -9,6 +10,8 @@ from messages.eof import EOF
 from messages.client_disconnected import ClientDisconnected
 from src.utils import close_socket
 from src.client_state import ClientState
+
+CLIENT_DISCONNECT_TIMEOUT = 1
 
 class ClientHandler:
     def __init__(self, client_id, client_sock, messages_queue, receiver_pool_semaphore):
@@ -32,15 +35,23 @@ class ClientHandler:
     def handle_client(self):
         communication.send_message(self._client_sock, str(self._client_id))
         
+        self._client_sock.settimeout(CLIENT_DISCONNECT_TIMEOUT)
         while not self._shutdown_requested:
             try:
                 msg = communication.receive_message(self._client_sock)
                 self.__handle_client_message(msg)
-            except (OSError, ConnectionError) as e:
-                logging.error(f"action: receive_message | result: fail | error: {e}")
+            except ConnectionError:
+                logging.info(f"action: client_disconnected_after_finished_sending | client_id: {self._client_id}")
                 close_socket(self._client_sock, f"client_{self._client_id}_socket")
-                self._messages_queue.put(ClientDisconnected(self._client_id))
                 break
+            except socket.timeout:
+                logging.info(f"action: client_disconnected_while_sending | client_id: {self._client_id}")
+                self._messages_queue.put(ClientDisconnected(self._client_id))
+                close_socket(self._client_sock, f"client_{self._client_id}_socket")
+                break
+            except OSError:
+                logging.info(f"action: terminating_client_handler | client_id: {self._client_id}")
+                break 
         self._receiver_pool_semaphore.release()
         
     def __handle_client_message(self, msg):
