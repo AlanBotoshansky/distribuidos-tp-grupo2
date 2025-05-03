@@ -205,7 +205,7 @@ def generate_data_cleaner():
             "PYTHONUNBUFFERED=1",
             "MOVIES_EXCHANGE=movies",
             "RATINGS_EXCHANGE=ratings",
-            "CREDITS_EXCHANGE=credits",
+            "CREDITS_EXCHANGE=credits"
         ],
         volumes=[
             "./controllers/data_cleaner/config.ini:/config.ini"
@@ -244,14 +244,14 @@ def generate_clients(n):
             image="client",
             environment=[
                 "PYTHONUNBUFFERED=1",
-                "RESULTS_DIR=/results",
+                f"RESULTS_DIR=/results/client_{i}",
             ],
             volumes=[
                 "./client/config.ini:/config.ini",
                 "./datasets/movies_metadata.csv:/datasets/movies_metadata.csv",
                 "./datasets/ratings.csv:/datasets/ratings.csv",
                 "./datasets/credits.csv:/datasets/credits.csv",
-                "./results:/results"
+                f"./results/client_{i}:/results/client_{i}"
             ],
             networks=[
                 "testing_net"

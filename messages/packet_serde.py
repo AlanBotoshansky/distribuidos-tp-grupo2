@@ -4,13 +4,13 @@ from messages.movies_batch import MoviesBatch
 from messages.eof import EOF
 from messages.investor_country import InvestorCountry
 from messages.ratings_batch import RatingsBatch
-from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
 from messages.credits_batch import CreditsBatch
 from messages.movie_credits_batch import MovieCreditsBatch
 from messages.actor_participation import ActorParticipation
 from messages.analyzed_movies_batch import AnalyzedMoviesBatch
 from messages.avg_rate_revenue_budget import AvgRateRevenueBudget
+from messages.client_disconnected import ClientDisconnected
 
 class PacketSerde:
     @classmethod
@@ -37,6 +37,8 @@ class PacketSerde:
             return AnalyzedMoviesBatch.deserialize(payload)
         elif packet_type == PacketType.AVG_RATE_REVENUE_BUDGET:
             return AvgRateRevenueBudget.deserialize(payload)
+        elif packet_type == PacketType.CLIENT_DISCONNECTED:
+            return ClientDisconnected.deserialize(payload)
         else:
             raise ValueError(f"Unknown packet type: {packet_type}")
     

@@ -3,8 +3,7 @@ import socket
 import signal
 import multiprocessing as mp
 import communication.communication as communication
-from datetime import datetime
-import os
+from src.results_receiver import ResultsReceiver
 
 QUERY_RESULTS_HEADERS = [
     "id,title,genres",
@@ -30,7 +29,6 @@ class Client:
         self._results_dir = results_dir
         self._result_files = {}
         self._data_socket = None
-        self._results_socket = None
         self._results_receiver = None
         self._id = None
         
@@ -52,37 +50,14 @@ class Client:
             logging.info(f'action: close_{socket_name} | result: success')
         except OSError:
             logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
-            
-    def __create_results_dir(self):
-        os.makedirs(self._results_dir, exist_ok=True)
-
-    def __get_result_file(self, num_query):
-        if num_query not in self._result_files:
-            file_path = os.path.join(self._results_dir, f"query_{num_query}_results.csv")
-            self._result_files[num_query] = open(file_path, 'w')
-            self._result_files[num_query].write(f"{QUERY_RESULTS_HEADERS[num_query - 1]}\n")
-        return self._result_files[num_query]
-
-    def __write_result_to_file(self, num_query, result):
-        file_handle = self.__get_result_file(num_query)
-        file_handle.write(f"{result}\n")
-        file_handle.flush()
-
-    def __close_result_file(self, num_query):
-        if num_query in self._result_files:
-            self._result_files[num_query].close()
-            self._result_files.pop(num_query)
-
-    def __close_all_result_files(self):
-        for num_query in self._result_files:
-            self.__close_result_file(num_query)
     
     def __shutdown(self):
+        if self._results_receiver:
+            self._results_receiver.terminate()
+            self._results_receiver.join()
+            logging.info("action: results_receiver_terminated | result: success")
+        
         self.__close_socket(self._data_socket, "data_socket")
-        self.__close_socket(self._results_socket, "results_socket")
-        self.__close_all_result_files()
-            
-        self._results_receiver.join()
         
     def __connect_to_server(self, server_ip, server_port):
         logging.info(f"Connecting to server at {server_ip}:{server_port}")
@@ -90,13 +65,10 @@ class Client:
         sock.connect((server_ip, server_port))
         return sock
     
-    def __receive_and_send_id(self):
+    def __receive_id(self):
         logging.info("action: receive_id | result: in_progress")
         id = communication.receive_message(self._data_socket)
         logging.info(f"action: receive_id | result: success | id: {id}")
-        logging.info("action: send_id | result: in_progress")
-        communication.send_message(self._results_socket, id)
-        logging.info(f"action: send_id | result: success | id: {id}")
         return id
     
     def __send_file(self, file_path, batch_max_size=1):
@@ -125,30 +97,10 @@ class Client:
             logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
         except OSError as e:
             logging.error(f"Error while sending data: {e}")
-        
-    def __receive_results(self, results_socket):
-        self.__create_results_dir()
-        amount_queries_resolved = 0
-        
-        start_time = datetime.now()
-        while True:
-            try:
-                message = communication.receive_lines_message(results_socket)
-                num_query, results = int(message[0]), message[1:]
-                for result in results:
-                    if result == communication.EOF:
-                        logging.info(f"Query {num_query} resolved in {(datetime.now() - start_time).total_seconds()} seconds")
-                        self.__close_result_file(num_query)
-                        amount_queries_resolved += 1
-                        if amount_queries_resolved == len(QUERY_RESULTS_HEADERS):
-                            logging.info("action: all_queries_resolved | result: success")
-                            return
-                    else:
-                        self.__write_result_to_file(num_query, result)
-                        logging.info(f"Received result from query {num_query}: {result}")
-            except OSError as e:
-                logging.error(f"Error while receiving results: {e}")
-                return
+    
+    def __receive_results(self, id):
+        results_receiver = ResultsReceiver(id, self._results_dir, self._server_ip_results, self._server_port_results)
+        results_receiver.run()
         
     def run(self):
         try:
@@ -158,27 +110,16 @@ class Client:
             return
         
         try:
-            self._results_socket = self.__connect_to_server(self._server_ip_results, self._server_port_results)
+            id = self.__receive_id()
         except OSError as e:
-            logging.error(f"Error while connecting to results socket: {e}")
+            logging.error(f"action: receive_id | result: fail | error: {e}")
             self.__close_socket(self._data_socket, "data_socket")
             return
-        
-        try:
-            self._id = self.__receive_and_send_id()
-        except OSError as e:
-            logging.error(f"action: send_id | result: fail | error: {e}")
-            self.__close_socket(self._data_socket, "data_socket")
-            self.__close_socket(self._results_socket, "results_socket")
-            return
-        
-        self._results_dir = os.path.join(self._results_dir, f"client_{self._id}")
-        
-        self._results_receiver = mp.Process(target=self.__receive_results, args=(self._results_socket,))
+    
+        self._results_receiver = mp.Process(target=self.__receive_results, args=(id,))
         self._results_receiver.start()
         
-        self.__send_data()      
+        self.__send_data()
         self.__close_socket(self._data_socket, "data_socket")
         
         self._results_receiver.join()
-        self.__close_socket(self._results_socket, "results_socket")

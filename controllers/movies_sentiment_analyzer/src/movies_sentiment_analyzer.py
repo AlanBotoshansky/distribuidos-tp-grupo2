@@ -72,6 +72,10 @@ class MoviesSentimentAnalyzer:
                 logging.info("action: sent_eof | result: success")
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
+            self._middleware.send_message(PacketSerde.serialize(client_disconnected))
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

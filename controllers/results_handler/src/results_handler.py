@@ -80,13 +80,14 @@ class ResultsHandler:
             client_id, result = client_result
             try:
                 if client_id not in self._client_socks:
-                    logging.info(f"action: send_results | result: fail | error: client {client_id} not found")
+                    logging.debug(f"action: send_results | result: fail | error: client {client_id} not found")
                     continue
                 client_sock = self._client_socks[client_id]
                 communication.send_lines(client_sock, result)
-            except OSError as e:
-                logging.error(f"action: send_results | result: fail | error: {e}")
-                break
+            except OSError:
+                logging.error(f"action: client_disconnected | client_id: {client_id}")
+                self._client_socks.pop(client_id)
+                self.__close_socket(client_sock, f"client_{client_id}_socket")
     
     def __start_sender_process(self):
         self._sender_process = mp.Process(target=self.__send_results)

@@ -99,3 +99,33 @@ En el diagrama de paquetes podemos observar la estructura del proyecto. Cada uno
 ![DAG](./diagramas/dag/dag.png)
 
 El DAG (Direct Acyclic Graph) es una representación gráfica de las distintas tareas que se realizan para resolver las consultas. Cada nodo del DAG representa una tarea, y cada arista representa una dependencia entre las distintas tareas. El DAG permite visualizar de forma clara el flujo de trabajo del sistema, y cómo se distribuyen las tareas entre los distintos nodos. Además, en las aristas se especifican los distintos campos de la información que fluye entre los nodos. También se puede ver que a medida que fluye la información, hay campos que se van eliminando, ya que no son necesarios, y otros que se van agregando a medida que se van realizando las distintas tareas.
+
+---
+
+## Múltiples Clientes
+
+Para que el sistema pueda soportar múltiples clientes, se realizaron las siguientes modificaciones:
+
+### Campo `client_id` en todos los paquetes
+
+Se agregó un campo `client_id` en todos los paquetes que se envían entre los distintos nodos del sistema. Este campo permite identificar a qué cliente pertenece cada paquete, y así poder enviarle la respuesta correspondiente. De esta manera, los clientes pueden realizar consultas simultáneamente, y el sistema puede responderle a cada uno de ellos de forma independiente. Gracias al `client_id`, los controllers que mantienen estado, como lo son los `Joiners` y `Aggregators`, pueden mantener el estado de cada cliente de forma independiente. Luego, el `Results Handler` envía los resultados correspondientes a cada cliente de acuerdo al `client_id` de cada resultado.
+
+### Asignación de id único a cada cliente
+
+Cada cliente, al conectarse al `Data Cleaner`, recibe un id único que lo identifica. Luego, envía este id al `Results Handler` para que éste luego pueda enviarle los resultados que le correspondan.
+
+El siguiente diagrama ilustra la forma en la que se asigna el id único a cada cliente:
+
+![Asignacion de id](./diagramas/asignacion_id/diagrama_asignacion_id.png)
+
+### Limpieza de estado de los clientes en los controllers
+
+Se implementó un mecanismo de limpieza de estado en los controllers que mantienen estado, como lo son los `Joiners` y `Aggregators`.
+
+Por un lado, luego de haber procesado la totalidad de los paquetes de un cliente, se eliminan los datos de estado de ese cliente. Por ejemplo, en los `Joiners`, luego de haber unido todos los paquetes de un cliente, se eliminan las péliculas que se tenían guardadas en memoria de ese cliente. De esta manera, se libera memoria y se evita que el sistema se sature con datos innecesarios.
+
+Por el otro lado, si un cliente se desconecta de forma abrupta, se envia desde el `Data Cleaner` y se propaga a través de los distintos controllers un mensaje de tipo `ClientDisconnected`, que indica que el cliente se ha desconectado. Este mensaje es recibido por los `Joiners` y `Aggregators`, y se eliminan los datos de estado de ese cliente. De esta manera, se evita que el sistema mantenga datos innecesarios de clientes que ya no están conectados.
+
+### Limite de cantidad de clientes que realizan consultas simultáneamente
+
+Se implementó un mecanismo para limitar la cantidad de clientes que pueden realizar consultas simultáneamente. Dicha cantidad puede ser configurada en el archivo `config.ini` del `Data Cleaner` o pasado como variable de entorno llamada `MAX_CONCURRENT_CLIENTS`. Esto lo hicimos para evitar que el sistema reserve recursos de forma ilimitada, y así evitar ataques de denegación de servicio (DoS). Además, esto permite que el sistema atienda a los clientes de a "turnos", y así evitar que el sistema se sature, tanto en memoria como en CPU. Si se quieren atender a más clientes, se puede aumentar el límite de clientes simultáneos, y a su vez escalar el sistema horizontalmente, agregando más nodos al sistema.

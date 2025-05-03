@@ -73,6 +73,11 @@ class MostLeastRatedMoviesCalculator:
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
+            self.__clean_client_state(client_disconnected.client_id)
+            self._middleware.send_message(PacketSerde.serialize(client_disconnected))
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 

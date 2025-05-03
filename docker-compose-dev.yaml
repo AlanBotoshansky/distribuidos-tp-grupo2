@@ -32,13 +32,13 @@ services:
     image: client:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - RESULTS_DIR=/results
+    - RESULTS_DIR=/results/client_1
     volumes:
     - ./client/config.ini:/config.ini
     - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
     - ./datasets/ratings.csv:/datasets/ratings.csv
     - ./datasets/credits.csv:/datasets/credits.csv
-    - ./results:/results
+    - ./results/client_1:/results/client_1
     networks:
     - testing_net
     depends_on:
@@ -49,13 +49,13 @@ services:
     image: client:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - RESULTS_DIR=/results
+    - RESULTS_DIR=/results/client_2
     volumes:
     - ./client/config.ini:/config.ini
     - ./datasets/movies_metadata.csv:/datasets/movies_metadata.csv
     - ./datasets/ratings.csv:/datasets/ratings.csv
     - ./datasets/credits.csv:/datasets/credits.csv
-    - ./results:/results
+    - ./results/client_2:/results/client_2
     networks:
     - testing_net
     depends_on:

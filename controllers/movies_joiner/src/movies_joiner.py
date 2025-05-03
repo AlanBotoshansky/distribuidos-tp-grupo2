@@ -50,6 +50,11 @@ class MoviesJoiner:
         self._movies[client_id] = self._movies.get(client_id, {})
         for movie in movies_batch.get_items():
             self._movies[client_id][movie.id] = movie.title
+            
+    def __handle_client_disconnected(self, client_disconnected):
+        logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
+        self.__clean_client_state(client_disconnected.client_id)
+        self._middleware.send_message(PacketSerde.serialize(client_disconnected))
     
     def __handle_movies_batch_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -59,6 +64,9 @@ class MoviesJoiner:
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             self._all_movies_received_of_clients.add(eof.client_id)
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
@@ -75,6 +83,9 @@ class MoviesJoiner:
             log_action_prefix: Prefix for the log message
         """
         client_id = batch.client_id
+        if client_id not in self._movies:
+            return
+        
         joined_batch = joined_batch_class(client_id, [])
         batch_to_reenqueue = received_batch_class(client_id, [])
         
@@ -118,9 +129,12 @@ class MoviesJoiner:
         )
         
     def __clean_client_state(self, client_id):
-        self._all_movies_received_of_clients.remove(client_id)
+        if client_id in self._all_movies_received_of_clients:
+            self._all_movies_received_of_clients.remove(client_id)
         if client_id in self._movies:
             self._movies.pop(client_id)
+        if client_id in self._should_reenqueue_eof_of_clients:
+            self._should_reenqueue_eof_of_clients.remove(client_id)
         
     def __handle_eof(self, eof):
         client_id = eof.client_id
@@ -150,6 +164,9 @@ class MoviesJoiner:
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             self.__handle_eof(eof)
+        elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
+            client_disconnected = msg
+            self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
