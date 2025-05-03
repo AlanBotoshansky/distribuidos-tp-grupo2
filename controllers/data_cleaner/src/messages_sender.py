@@ -23,15 +23,15 @@ class MessagesSender:
     def send_messages(self):
         while not self._shutdown_requested:
             msg = self._messages_queue.get()
+            if not msg:
+                logging.info("action: stop_sending | result: success")
+                break
             if msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
                 for exchange in self._exchanges:
                     self._middleware.send_message(PacketSerde.serialize(msg), exchange=exchange)
                 self._middleware.send_message(PacketSerde.serialize(msg))
                 continue
             self._current_exchange_i[msg.client_id] = self._current_exchange_i.get(msg.client_id, 0)
-            if not msg:
-                logging.info("action: stop_sending | result: success")
-                break
             self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._exchanges[self._current_exchange_i[msg.client_id]])
             if msg.packet_type() == PacketType.EOF:
                 self._current_exchange_i[msg.client_id] += 1

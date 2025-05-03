@@ -83,6 +83,9 @@ class MoviesJoiner:
             log_action_prefix: Prefix for the log message
         """
         client_id = batch.client_id
+        if client_id not in self._movies:
+            return
+        
         joined_batch = joined_batch_class(client_id, [])
         batch_to_reenqueue = received_batch_class(client_id, [])
         
