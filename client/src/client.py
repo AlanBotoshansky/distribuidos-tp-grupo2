@@ -3,6 +3,7 @@ import socket
 import signal
 import multiprocessing as mp
 import communication.communication as communication
+from utils.utils import close_socket
 from src.results_receiver import ResultsReceiver
 
 QUERY_RESULTS_HEADERS = [
@@ -41,15 +42,6 @@ class Client:
         if signalnum == signal.SIGTERM:
             logging.info('action: signal_received | result: success | signal: SIGTERM')
             self.__shutdown()
-            
-    def __close_socket(self, socket_to_close, socket_name):
-        try:
-            logging.info(f'action: close_{socket_name} | result: in_progress')
-            socket_to_close.shutdown(socket.SHUT_RDWR)
-            socket_to_close.close()
-            logging.info(f'action: close_{socket_name} | result: success')
-        except OSError:
-            logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
     
     def __shutdown(self):
         if self._results_receiver:
@@ -57,7 +49,7 @@ class Client:
             self._results_receiver.join()
             logging.info("action: results_receiver_terminated | result: success")
         
-        self.__close_socket(self._data_socket, "data_socket")
+        close_socket(self._data_socket, "data_socket")
         
     def __connect_to_server(self, server_ip, server_port):
         logging.info(f"Connecting to server at {server_ip}:{server_port}")
@@ -113,13 +105,13 @@ class Client:
             id = self.__receive_id()
         except OSError as e:
             logging.error(f"action: receive_id | result: fail | error: {e}")
-            self.__close_socket(self._data_socket, "data_socket")
+            close_socket(self._data_socket, "data_socket")
             return
     
         self._results_receiver = mp.Process(target=self.__receive_results, args=(id,))
         self._results_receiver.start()
         
         self.__send_data()
-        self.__close_socket(self._data_socket, "data_socket")
+        close_socket(self._data_socket, "data_socket")
         
         self._results_receiver.join()

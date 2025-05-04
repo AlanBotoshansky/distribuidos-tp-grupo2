@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 import multiprocessing as mp
-from src.utils import close_socket
+from utils.utils import close_socket
 from src.messages_sender import MessagesSender
 from src.client_handler import ClientHandler
 
@@ -18,10 +18,10 @@ class DataCleaner:
         self._credits_exchange = credits_exchange
         self._max_concurrent_clients = max_concurrent_clients
         self._shutdown_requested = False
-        self._messages_queue = mp.Queue(maxsize=MESSAGES_QUEUE_SIZE)
+        self._manager = mp.Manager()
+        self._messages_queue = self._manager.Queue(maxsize=MESSAGES_QUEUE_SIZE)
         self._sender_process = None
         self._receiver_processes = []
-        self._manager = mp.Manager()
         self._receiver_pool_semaphore = self._manager.BoundedSemaphore(max_concurrent_clients)
         self._next_client_id = 1
         
@@ -47,7 +47,9 @@ class DataCleaner:
         for receiver_process in self._receiver_processes:
             receiver_process.terminate()
             receiver_process.join()
-        
+            logging.info("action: receiver_process_terminated | result: success")
+            
+        self._messages_queue.put(None)
         if self._sender_process:
             self._sender_process.terminate()
             self._sender_process.join()
@@ -68,17 +70,17 @@ class DataCleaner:
         self._next_client_id += 1
         return client_id, client_sock
 
-    def __handle_client(self, client_id, client_sock):
-        client_handler = ClientHandler(client_id, client_sock, self._messages_queue, self._receiver_pool_semaphore)
+    def __handle_client(self, client_id, client_sock, messages_queue, receiver_pool_semaphore):
+        client_handler = ClientHandler(client_id, client_sock, messages_queue, receiver_pool_semaphore)
         client_handler.handle_client()
 
-    def __send_messages(self):
-        data_exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
-        messages_sender = MessagesSender(self._messages_queue, data_exchanges)
+    def __send_messages(self, messages_queue, data_exchanges):
+        messages_sender = MessagesSender(messages_queue, data_exchanges)
         messages_sender.send_messages()
     
     def run(self):
-        self._sender_process = mp.Process(target=self.__send_messages)
+        data_exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
+        self._sender_process = mp.Process(target=self.__send_messages, args=(self._messages_queue, data_exchanges))
         self._sender_process.start()
         while not self._shutdown_requested:
             self._receiver_pool_semaphore.acquire()
@@ -89,7 +91,7 @@ class DataCleaner:
                     break
                 logging.error(f"action: accept_connection | result: fail | error: {e}")
             
-            client_handler = mp.Process(target=self.__handle_client, args=(client_id, client_sock))
+            client_handler = mp.Process(target=self.__handle_client, args=(client_id, client_sock, self._messages_queue, self._receiver_pool_semaphore))
             self._receiver_processes.append(client_handler)
             client_handler.start()
 

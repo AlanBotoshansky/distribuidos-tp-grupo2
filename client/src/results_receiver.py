@@ -2,6 +2,7 @@ import logging
 import socket
 import signal
 import communication.communication as communication
+from utils.utils import close_socket
 from datetime import datetime
 import os
 
@@ -30,17 +31,8 @@ class ResultsReceiver:
         if signalnum == signal.SIGTERM:
             self.__shutdown()
             
-    def __close_socket(self, socket_to_close, socket_name):
-        try:
-            logging.info(f'action: close_{socket_name} | result: in_progress')
-            socket_to_close.shutdown(socket.SHUT_RDWR)
-            socket_to_close.close()
-            logging.info(f'action: close_{socket_name} | result: success')
-        except OSError:
-            logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
-            
     def __shutdown(self):
-        self.__close_socket(self._results_socket, "results_socket")
+        close_socket(self._results_socket, "results_socket")
         self.__close_all_result_files()
         
     def __connect_to_server(self, server_ip, server_port):
@@ -112,8 +104,8 @@ class ResultsReceiver:
             self.__send_id()
         except OSError as e:
             logging.error(f"action: send_id | result: fail | error: {e}")
-            self.__close_socket(self._results_socket, "results_socket")
+            close_socket(self._results_socket, "results_socket")
             return
         
         self.__receive_results()
-        self.__close_socket(self._results_socket, "results_socket")
+        close_socket(self._results_socket, "results_socket")

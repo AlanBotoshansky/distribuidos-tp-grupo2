@@ -2,13 +2,13 @@ import socket
 import logging
 import signal
 import communication.communication as communication
+from utils.utils import close_socket
 from messages.exceptions import InvalidLineError
 from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.credits_batch import CreditsBatch
 from messages.eof import EOF
 from messages.client_disconnected import ClientDisconnected
-from src.utils import close_socket
 from src.client_state import ClientState
 
 CLIENT_DISCONNECT_TIMEOUT = 1
@@ -51,7 +51,7 @@ class ClientHandler:
                 break
             except OSError:
                 logging.info(f"action: terminating_client_handler | client_id: {self._client_id}")
-                break 
+                break
         self._receiver_pool_semaphore.release()
         
     def __handle_client_message(self, msg):

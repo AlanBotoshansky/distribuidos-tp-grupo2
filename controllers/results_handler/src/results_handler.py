@@ -3,6 +3,7 @@ import logging
 import signal
 import multiprocessing as mp
 import communication.communication as communication
+from utils.utils import close_socket
 from src.query_results_handler import QueryResultsHandler
 
 class ResultsHandler:
@@ -13,7 +14,7 @@ class ResultsHandler:
         self._shutdown_requested = False
         self._manager = mp.Manager()
         self._client_socks = self._manager.dict()
-        self._results_queue = mp.Queue()
+        self._results_queue = self._manager.Queue()
         self._input_queues = input_queues
         self._sender_process = None
         self._query_results_handlers = []
@@ -29,22 +30,13 @@ class ResultsHandler:
             self._shutdown_requested = True
             self.__cleanup()
             
-    def __close_socket(self, socket_to_close, socket_name):
-        try:
-            logging.info(f'action: close_{socket_name} | result: in_progress')
-            socket_to_close.shutdown(socket.SHUT_RDWR)
-            socket_to_close.close()
-            logging.info(f'action: close_{socket_name} | result: success')
-        except OSError:
-            logging.error(f"action: close_{socket_name} | result: fail | socket already closed")
-            
     def __cleanup(self):
         """
         Cleanup server resources during shutdown
         """
         self._results_queue.put(None)
         for client_id, client_sock in self._client_socks.items():
-            self.__close_socket(client_sock, f"client_{client_id}_socket") 
+            close_socket(client_sock, f"client_{client_id}_socket") 
                 
         if self._sender_process:
             self._sender_process.join()
@@ -55,7 +47,7 @@ class ResultsHandler:
             query_results_handler.join()
             logging.info("action: query_results_handler_terminated | result: success")
 
-        self.__close_socket(self._server_socket, "server_socket")
+        close_socket(self._server_socket, "server_socket")
 
     def __accept_new_connection(self):
         """
@@ -71,26 +63,26 @@ class ResultsHandler:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
     
-    def __send_results(self):
+    def __send_results(self, client_socks, results_queue):
         while True:
-            client_result = self._results_queue.get()
+            client_result = results_queue.get()
             if not client_result:
                 logging.info("action: stop_sending | result: success")
                 return
             client_id, result = client_result
             try:
-                if client_id not in self._client_socks:
+                if client_id not in client_socks:
                     logging.debug(f"action: send_results | result: fail | error: client {client_id} not found")
                     continue
-                client_sock = self._client_socks[client_id]
+                client_sock = client_socks[client_id]
                 communication.send_lines(client_sock, result)
             except OSError:
                 logging.error(f"action: client_disconnected | client_id: {client_id}")
-                self._client_socks.pop(client_id)
-                self.__close_socket(client_sock, f"client_{client_id}_socket")
+                client_socks.pop(client_id)
+                close_socket(client_sock, f"client_{client_id}_socket")
     
     def __start_sender_process(self):
-        self._sender_process = mp.Process(target=self.__send_results)
+        self._sender_process = mp.Process(target=self.__send_results, args=(self._client_socks, self._results_queue))
         self._sender_process.start()
     
     def __handle_query(self, num_query, input_queues, results_queue):
@@ -108,7 +100,7 @@ class ResultsHandler:
         client_id = communication.receive_message(client_sock)
         if not client_id.isdecimal():
             logging.error(f"action: receive_client_id  | result: fail | error: Received invalid client id: {client_id}")
-            self.__close_socket(client_sock, f"client_{client_id}_socket")
+            close_socket(client_sock, f"client_{client_id}_socket")
             return
         client_id = int(client_id)
         self._client_socks[client_id] = client_sock

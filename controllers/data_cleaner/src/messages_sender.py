@@ -18,7 +18,6 @@ class MessagesSender:
     def __handle_signal(self, signalnum, frame):
         if signalnum == signal.SIGTERM:
             self._shutdown_requested = True
-            self._messages_queue.put(None)
     
     def send_messages(self):
         while not self._shutdown_requested:
@@ -36,6 +35,6 @@ class MessagesSender:
             if msg.packet_type() == PacketType.EOF:
                 self._current_exchange_i[msg.client_id] += 1
                 if self._current_exchange_i[msg.client_id] >= len(self._exchanges):
-                    logging.info("action: stop_sending | result: success")
+                    logging.info(f"action: stop_sending | result: success | client_id: {msg.client_id}")
                     self._current_exchange_i.pop(msg.client_id)
         self._middleware.stop()
