@@ -2,7 +2,7 @@ from enum import IntEnum
 from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.movie import Movie
-from messages.exceptions import InvalidMovieInBatchError
+from messages.exceptions import InvalidLineError
 
 from messages.serialization import (
     encode_string, encode_num, encode_strings_iterable, encode_date,
@@ -56,48 +56,30 @@ class MoviesBatch(BaseMessage):
         
         payload += len(self.movies).to_bytes(LENGTH_MOVIES_AMOUNT, 'big')
         
-        if fields_subset is not None:
-            fields = fields_subset
-            for field in fields:
-                if field not in field_type_and_encode_map:
-                    continue
-                field_type, encode = field_type_and_encode_map[field]
-                encoded_field_type = field_type.to_bytes(LENGTH_FIELD_TYPE, 'big')
-                
-                encoded_fields = b""
-                for movie in self.movies:
-                    field_value = getattr(movie, field)
-                    if field_value is None:
-                        raise InvalidMovieInBatchError(f"Movie missing value for field: {field}")
-                    encoded_field = encode(field_value)
-                    encoded_fields += encoded_field
-
-                payload += encoded_field_type + encoded_fields
-        else:
-            fields = field_type_and_encode_map.keys()
-            for field in fields:
-                if field not in field_type_and_encode_map:
-                    continue
-                field_type, encode = field_type_and_encode_map[field]
-                encoded_field_type = field_type.to_bytes(LENGTH_FIELD_TYPE, 'big')
-                
-                movies_that_have_value = 0
-                
-                encoded_fields = b""
-                for movie in self.movies:
-                    field_value = getattr(movie, field)
-                    if field_value is None:
-                        continue
+        fields = fields_subset if fields_subset is not None else field_type_and_encode_map.keys()
+        for field in fields:
+            if field not in field_type_and_encode_map:
+                continue
+            field_type, encode = field_type_and_encode_map[field]
+            encoded_field_type = field_type.to_bytes(LENGTH_FIELD_TYPE, 'big')
+            
+            movies_that_have_value = 0
+            
+            encoded_fields = b""
+            for movie in self.movies:
+                field_value = getattr(movie, field)
+                if isinstance(field_value, (list, str)):
+                    if len(field_value) != 0:
+                        movies_that_have_value += 1
+                elif field_value is not None:
                     movies_that_have_value += 1
-                    encoded_field = encode(field_value)
-                    encoded_fields += encoded_field
-                    
-                if movies_that_have_value == 0:
-                    continue
-                if movies_that_have_value != len(self.movies):
-                    raise InvalidMovieInBatchError(f"Not all movies have value for field: {field}")
+                encoded_field = encode(field_value)
+                encoded_fields += encoded_field
+                
+            if movies_that_have_value == 0:
+                continue
 
-                payload += encoded_field_type + encoded_fields
+            payload += encoded_field_type + encoded_fields
 
         return payload
     
@@ -139,8 +121,11 @@ class MoviesBatch(BaseMessage):
     def from_csv_lines(cls, client_id, lines: list[str]):
         movies = []
         for line in lines:
-            movie = Movie.from_csv_line(line)
-            movies.append(movie)
+            try:
+                movie = Movie.from_csv_line(line)
+                movies.append(movie)
+            except InvalidLineError:
+                continue
         return cls(client_id, movies)
     
     def to_csv_lines(self):

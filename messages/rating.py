@@ -38,12 +38,16 @@ class Rating:
     
     @classmethod
     def __parse_movie_id(cls, movie_id_str):
+        if not movie_id_str:
+            raise InvalidLineError("Invalid movie_id: empty")
         if not movie_id_str.isdecimal():
             raise InvalidLineError(f"Invalid movie_id: {movie_id_str}")
         return int(movie_id_str)
         
     @classmethod
     def __parse_rating(cls, rating_str):
+        if not rating_str:
+            raise InvalidLineError("Invalid rating: empty")
         if not rating_str.replace('.', '', 1).isdecimal():
             raise InvalidLineError(f"Invalid rating: {rating_str}")
         return float(rating_str)

@@ -3,7 +3,6 @@ import logging
 import signal
 import communication.communication as communication
 from utils.utils import close_socket
-from messages.exceptions import InvalidLineError
 from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.credits_batch import CreditsBatch
@@ -60,26 +59,14 @@ class ClientHandler:
             self._client_state.finished_sending_file()
             return
         if self._client_state.is_sending_movies():
-            try:
-                movies_csv_lines = communication.parse_lines_message(msg)
-                movies_batch = MoviesBatch.from_csv_lines(self._client_id, movies_csv_lines)
-                self._messages_queue.put(movies_batch)
-            except InvalidLineError as e:
-                logging.debug(f"action: handle_message | result: fail | error: {e}")
-                return
+            movies_csv_lines = communication.parse_lines_message(msg)
+            movies_batch = MoviesBatch.from_csv_lines(self._client_id, movies_csv_lines)
+            self._messages_queue.put(movies_batch)
         elif self._client_state.is_sending_ratings():
-            try:
-                ratings_csv_lines = communication.parse_lines_message(msg)
-                ratings_batch = RatingsBatch.from_csv_lines(self._client_id, ratings_csv_lines)
-                self._messages_queue.put(ratings_batch)
-            except InvalidLineError as e:
-                logging.debug(f"action: handle_message | result: fail | error: {e}")
-                return
+            ratings_csv_lines = communication.parse_lines_message(msg)
+            ratings_batch = RatingsBatch.from_csv_lines(self._client_id, ratings_csv_lines)
+            self._messages_queue.put(ratings_batch)
         elif self._client_state.is_sending_credits():
-            try:
-                credits_csv_lines = communication.parse_lines_message(msg)
-                credits_batch = CreditsBatch.from_csv_lines(self._client_id, credits_csv_lines)
-                self._messages_queue.put(credits_batch)
-            except InvalidLineError as e:
-                logging.debug(f"action: handle_message | result: fail | error: {e}")
-                return
+            credits_csv_lines = communication.parse_lines_message(msg)
+            credits_batch = CreditsBatch.from_csv_lines(self._client_id, credits_csv_lines)
+            self._messages_queue.put(credits_batch)

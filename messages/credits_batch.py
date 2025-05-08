@@ -1,6 +1,7 @@
 from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.credit import Credit
+from messages.exceptions import InvalidLineError
 
 class CreditsBatch(BaseMessage):
     def __init__(self, client_id, credits):
@@ -45,6 +46,9 @@ class CreditsBatch(BaseMessage):
     def from_csv_lines(cls, client_id, lines: list[str]):
         credits = []
         for line in lines:
-            credit = Credit.from_csv_line(line)
-            credits.append(credit)
+            try:
+                credit = Credit.from_csv_line(line)
+                credits.append(credit)
+            except InvalidLineError:
+                continue
         return cls(client_id, credits)

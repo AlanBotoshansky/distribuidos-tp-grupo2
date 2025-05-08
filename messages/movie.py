@@ -7,7 +7,7 @@ from messages.exceptions import InvalidLineError
 TOTAL_FIELDS_IN_CSV_LINE = 24
 
 class Movie:
-    def __init__(self, id=None, title=None, genres=None, production_countries=None, release_date=None, budget=None, overview=None, revenue=None):
+    def __init__(self, id=None, title='', genres=[], production_countries=[], release_date=None, budget=None, overview='', revenue=None):
         self.id = id
         self.title = title
         self.genres = genres
@@ -31,11 +31,11 @@ class Movie:
         budget = cls.__parse_budget(fields[2])
         genres = cls.__parse_genres(fields[3])
         id = cls.__parse_id(fields[5])
-        overview = fields[9]
+        overview = cls.__parse_overview(fields[9])
         production_countries = cls.__parse_production_countries(fields[13])
         release_date = cls.__parse_release_date(fields[14])
         revenue = cls.__parse_revenue(fields[15])
-        title = fields[20]
+        title = cls.__parse_title(fields[20])
 
         return cls(
             id=id,
@@ -50,55 +50,83 @@ class Movie:
 
     @classmethod
     def __parse_budget(cls, budget_str):
-        if not budget_str.isdecimal():
-            raise InvalidLineError(f"Invalid budget: {budget_str}")
-        return int(budget_str)
+        if not budget_str:
+            raise InvalidLineError("Invalid budget: empty")
+        try:
+            return int(budget_str)
+        except (ValueError, TypeError):
+            return None
     
     @classmethod
     def __parse_genres(cls, genres_str):
         if not genres_str:
+            raise InvalidLineError("Invalid genres: empty")
+        try:
+            genres_json = ast.literal_eval(genres_str)
+            return [g['name'] for g in genres_json]
+        except (ValueError, SyntaxError):
             return []
-        genres_json = ast.literal_eval(genres_str)
-        return [g['name'] for g in genres_json]
     
     @classmethod
     def __parse_id(cls, id_str):
+        if not id_str:
+            raise InvalidLineError("Invalid id: empty")
         if not id_str.isdecimal():
             raise InvalidLineError(f"Invalid id: {id_str}")
         return int(id_str)
     
     @classmethod
+    def __parse_overview(cls, overview_str):
+        if not overview_str:
+            raise InvalidLineError("Invalid overview: empty")
+        return overview_str
+    
+    @classmethod
     def __parse_production_countries(cls, production_countries_str):
         if not production_countries_str:
+            raise InvalidLineError("Invalid production_countries: empty")
+        try:
+            countries_json = ast.literal_eval(production_countries_str)
+            return [c['name'] for c in countries_json]
+        except (ValueError, SyntaxError):
             return []
-        countries_json = ast.literal_eval(production_countries_str)
-        return [c['name'] for c in countries_json]
     
     @classmethod
     def __parse_release_date(cls, release_date_str):
+        if not release_date_str:
+            raise InvalidLineError("Invalid release_date: empty")
         try:
             return datetime.strptime(release_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            raise InvalidLineError(f"Invalid release date: {release_date_str}")
+        except (ValueError, TypeError):
+            return None
         
     @classmethod
     def __parse_revenue(cls, revenue_str):
-        if not revenue_str.replace('.', '', 1).isdecimal():
-            raise InvalidLineError(f"Invalid revenue: {revenue_str}")
-        return float(revenue_str)
+        if not revenue_str:
+            raise InvalidLineError("Invalid revenue: empty")
+        try:
+            return float(revenue_str)
+        except (ValueError, TypeError):
+            return None
+        
+    @classmethod
+    def __parse_title(cls, title_str):
+        if not title_str:
+            raise InvalidLineError("Invalid title: empty")
+        return title_str
     
     def to_csv_line(self):
         result_line = []
         if self.id is not None:
             result_line.append(str(self.id))
             
-        if self.title is not None:
+        if self.title != '':
             result_line.append(self.title)
             
-        if self.genres is not None:
+        if len(self.genres) > 0:
             result_line.append(str(self.genres))
             
-        if self.production_countries is not None:
+        if len(self.production_countries) > 0:
             result_line.append(str(self.production_countries))
         
         if self.release_date is not None:
@@ -107,7 +135,7 @@ class Movie:
         if self.budget is not None:
             result_line.append(str(self.budget))
             
-        if self.overview is not None:
+        if self.overview != '':
             result_line.append(self.overview)
             
         if self.revenue is not None:

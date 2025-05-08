@@ -37,7 +37,7 @@ class MoviesFilter:
         self._middleware.stop()
 
     def __filter_movie(self, movie):
-        if not hasattr(movie, self._filter_field):
+        if not hasattr(movie, self._filter_field) or getattr(movie, self._filter_field) is None:
             return False
         
         if self._filter_field == PRODUCTION_COUNTRIES_FIELD:
@@ -47,9 +47,10 @@ class MoviesFilter:
                     return False
                 return True
             else:
-                expected_countries = self._filter_values
+                expected_countries = [country.lower() for country in self._filter_values]
+                movie_prod_countries = [country.lower() for country in movie.production_countries]
                 for country in expected_countries:
-                    if country not in movie.production_countries:
+                    if country not in movie_prod_countries:
                         return False
                 return True
         

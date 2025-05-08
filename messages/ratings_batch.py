@@ -1,6 +1,7 @@
 from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.rating import Rating
+from messages.exceptions import InvalidLineError
 
 class RatingsBatch(BaseMessage):
     def __init__(self, client_id, ratings):
@@ -45,6 +46,9 @@ class RatingsBatch(BaseMessage):
     def from_csv_lines(cls, client_id, lines: list[str]):
         ratings = []
         for line in lines:
-            rating = Rating.from_csv_line(line)
-            ratings.append(rating)
+            try:
+                rating = Rating.from_csv_line(line)
+                ratings.append(rating)
+            except InvalidLineError:
+                continue
         return cls(client_id, ratings)

@@ -39,6 +39,8 @@ class Credit:
     
     @classmethod
     def __parse_movie_id(cls, movie_id_str):
+        if not movie_id_str:
+            raise InvalidLineError("Invalid movie_id: empty")
         if not movie_id_str.isdecimal():
             raise InvalidLineError(f"Invalid movie_id: {movie_id_str}")
         return int(movie_id_str)
@@ -46,6 +48,9 @@ class Credit:
     @classmethod
     def __parse_cast(cls, cast_str):
         if not cast_str:
+            raise InvalidLineError("Invalid cast: empty")
+        try:
+            cast_json = ast.literal_eval(cast_str)
+            return [c['name'] for c in cast_json]
+        except (ValueError, SyntaxError):
             return []
-        cast_json = ast.literal_eval(cast_str)
-        return [c['name'] for c in cast_json]
