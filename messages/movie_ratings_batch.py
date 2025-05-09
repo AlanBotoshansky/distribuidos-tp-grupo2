@@ -2,6 +2,10 @@ from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
 from messages.movie_rating import MovieRating
 
+from messages.serialization import (
+    encode_string,
+)
+
 class MovieRatingsBatch(BaseMessage):
     def __init__(self, client_id, movie_ratings):
         super().__init__(client_id)
@@ -21,7 +25,7 @@ class MovieRatingsBatch(BaseMessage):
     
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         for movie_rating in self.movie_ratings:
             payload += movie_rating.serialize()
         return payload
@@ -30,7 +34,7 @@ class MovieRatingsBatch(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         
         movie_ratings = []
         while offset < len(payload):

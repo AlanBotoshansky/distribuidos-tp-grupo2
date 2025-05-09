@@ -52,7 +52,7 @@ class MoviesBatch(BaseMessage):
         }
 
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         
         payload += len(self.movies).to_bytes(LENGTH_MOVIES_AMOUNT, 'big')
         
@@ -98,7 +98,7 @@ class MoviesBatch(BaseMessage):
 
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
 
         amount_movies = int.from_bytes(payload[offset:offset+LENGTH_MOVIES_AMOUNT], 'big')
         offset += LENGTH_MOVIES_AMOUNT

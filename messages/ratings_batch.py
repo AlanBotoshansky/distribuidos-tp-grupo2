@@ -3,6 +3,10 @@ from messages.packet_type import PacketType
 from messages.rating import Rating
 from messages.exceptions import InvalidLineError
 
+from messages.serialization import (
+    encode_string,
+)
+
 class RatingsBatch(BaseMessage):
     def __init__(self, client_id, ratings):
         super().__init__(client_id)
@@ -22,7 +26,7 @@ class RatingsBatch(BaseMessage):
     
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         for rating in self.ratings:
             payload += rating.serialize()
         return payload
@@ -31,7 +35,7 @@ class RatingsBatch(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         
         ratings = []
         while offset < len(payload):

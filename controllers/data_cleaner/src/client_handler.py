@@ -32,7 +32,7 @@ class ClientHandler:
         close_socket(self._client_sock, f"client_{self._client_id}_socket")
     
     def handle_client(self):
-        communication.send_message(self._client_sock, str(self._client_id))
+        communication.send_message(self._client_sock, self._client_id)
         
         self._client_sock.settimeout(CLIENT_DISCONNECT_TIMEOUT)
         while not self._shutdown_requested:

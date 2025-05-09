@@ -98,11 +98,6 @@ class ResultsHandler:
     
     def __handle_client_connection(self, client_sock):
         client_id = communication.receive_message(client_sock)
-        if not client_id.isdecimal():
-            logging.error(f"action: receive_client_id  | result: fail | error: Received invalid client id: {client_id}")
-            close_socket(client_sock, f"client_{client_id}_socket")
-            return
-        client_id = int(client_id)
         self._client_socks[client_id] = client_sock
     
     def run(self):

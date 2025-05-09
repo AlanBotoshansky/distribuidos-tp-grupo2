@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import multiprocessing as mp
+import uuid
 from utils.utils import close_socket
 from src.messages_sender import MessagesSender
 from src.client_handler import ClientHandler
@@ -23,7 +24,6 @@ class DataCleaner:
         self._sender_process = None
         self._receiver_processes = []
         self._receiver_pool_semaphore = self._manager.BoundedSemaphore(max_concurrent_clients)
-        self._next_client_id = 1
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -65,9 +65,8 @@ class DataCleaner:
         # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
         client_sock, addr = self._server_socket.accept()
-        client_id = self._next_client_id
+        client_id = str(uuid.uuid4())
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        self._next_client_id += 1
         return client_id, client_sock
 
     def __handle_client(self, client_id, client_sock, messages_queue, receiver_pool_semaphore):

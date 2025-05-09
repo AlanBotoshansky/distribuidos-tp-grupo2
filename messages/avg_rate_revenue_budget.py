@@ -3,7 +3,7 @@ from messages.packet_type import PacketType
 from messages.analyzed_movie import Sentiment
 
 from messages.serialization import (
-    encode_num,
+    encode_string, encode_num,
 )
 
 class AvgRateRevenueBudget(BaseMessage):
@@ -20,7 +20,7 @@ class AvgRateRevenueBudget(BaseMessage):
 
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         payload += encode_num(self.sentiment.value)
         payload += encode_num(self.avg)
 
@@ -30,7 +30,7 @@ class AvgRateRevenueBudget(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         sentiment, offset = cls.deserialize_int(payload, offset)
         avg, offset = cls.deserialize_float(payload, offset)
 

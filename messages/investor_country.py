@@ -19,7 +19,7 @@ class InvestorCountry(BaseMessage):
 
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         payload += encode_string(self.country)
         payload += encode_num(self.investment)
 
@@ -29,7 +29,7 @@ class InvestorCountry(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         country, offset = cls.deserialize_string(payload, offset)
         investment, offset = cls.deserialize_int(payload, offset)
 

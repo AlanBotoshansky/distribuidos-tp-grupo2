@@ -19,7 +19,7 @@ class ActorParticipation(BaseMessage):
 
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         payload += encode_string(self.actor)
         payload += encode_num(self.participation)
 
@@ -29,7 +29,7 @@ class ActorParticipation(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         actor, offset = cls.deserialize_string(payload, offset)
         participation, offset = cls.deserialize_int(payload, offset)
 

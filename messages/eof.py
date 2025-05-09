@@ -1,6 +1,9 @@
 from messages.base_message import BaseMessage
 from messages.packet_type import PacketType
-from messages.serialization import encode_strings_iterable
+
+from messages.serialization import (
+    encode_string, encode_strings_iterable,
+)
 
 class EOF(BaseMessage):
     def __init__(self, client_id, seen_ids=None):
@@ -15,7 +18,7 @@ class EOF(BaseMessage):
     
     def serialize(self):
         payload = b""
-        payload += self.serialize_client_id()
+        payload += encode_string(self.client_id)
         payload += encode_strings_iterable(self.seen_ids)
         
         return payload 
@@ -24,7 +27,7 @@ class EOF(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
-        client_id, offset = cls.deserialize_client_id(payload, offset)
+        client_id, offset = cls.deserialize_string(payload, offset)
         seen_ids, offset = cls.deserialize_strings_set(payload, offset)
         
         return cls(client_id, seen_ids)
