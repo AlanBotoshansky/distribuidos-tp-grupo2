@@ -28,7 +28,6 @@ class MessagesSender:
             if msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
                 for exchange in self._exchanges:
                     self._middleware.send_message(PacketSerde.serialize(msg), exchange=exchange)
-                self._middleware.send_message(PacketSerde.serialize(msg))
                 continue
             self._current_exchange_i[msg.client_id] = self._current_exchange_i.get(msg.client_id, 0)
             self._middleware.send_message(PacketSerde.serialize(msg), exchange=self._exchanges[self._current_exchange_i[msg.client_id]])

@@ -41,16 +41,16 @@ class ClientHandler:
                 self.__handle_client_message(msg)
             except ConnectionError:
                 logging.info(f"action: client_disconnected_after_finished_sending | client_id: {self._client_id}")
-                close_socket(self._client_sock, f"client_{self._client_id}_socket")
                 break
             except socket.timeout:
                 logging.info(f"action: client_disconnected_while_sending | client_id: {self._client_id}")
                 self._messages_queue.put(ClientDisconnected(self._client_id))
-                close_socket(self._client_sock, f"client_{self._client_id}_socket")
                 break
             except OSError:
                 logging.info(f"action: terminating_client_handler | client_id: {self._client_id}")
                 break
+        if not self._shutdown_requested:
+            close_socket(self._client_sock, f"client_{self._client_id}_socket")
         self._receiver_pool_semaphore.release()
         
     def __handle_client_message(self, msg):

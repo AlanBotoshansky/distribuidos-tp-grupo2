@@ -32,6 +32,7 @@ class Client:
         self._data_socket = None
         self._results_receiver = None
         self._id = None
+        self._shutdown_requested = False
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -41,6 +42,7 @@ class Client:
         """
         if signalnum == signal.SIGTERM:
             logging.info('action: signal_received | result: success | signal: SIGTERM')
+            self._shutdown_requested = True
             self.__shutdown()
     
     def __shutdown(self):
@@ -112,6 +114,7 @@ class Client:
         self._results_receiver.start()
         
         self.__send_data()
-        close_socket(self._data_socket, "data_socket")
+        if not self._shutdown_requested:
+            close_socket(self._data_socket, "data_socket")
         
         self._results_receiver.join()

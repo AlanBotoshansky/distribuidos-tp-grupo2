@@ -70,16 +70,17 @@ class ResultsHandler:
                 logging.info("action: stop_sending | result: success")
                 return
             client_id, result = client_result
+            if client_id not in client_socks:
+                logging.debug(f"action: send_results | result: fail | error: client {client_id} not found")
+                continue
+            client_sock = client_socks[client_id]
             try:
-                if client_id not in client_socks:
-                    logging.debug(f"action: send_results | result: fail | error: client {client_id} not found")
-                    continue
-                client_sock = client_socks[client_id]
                 communication.send_lines(client_sock, result)
             except OSError:
-                logging.error(f"action: client_disconnected | client_id: {client_id}")
-                client_socks.pop(client_id)
-                close_socket(client_sock, f"client_{client_id}_socket")
+                if not self._shutdown_requested:
+                    logging.error(f"action: client_disconnected | client_id: {client_id}")
+                    client_socks.pop(client_id)
+                    close_socket(client_sock, f"client_{client_id}_socket")
     
     def __start_sender_process(self):
         self._sender_process = mp.Process(target=self.__send_results, args=(self._client_socks, self._results_queue))

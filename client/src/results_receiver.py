@@ -21,6 +21,7 @@ class ResultsReceiver:
         self._server_ip_results = server_ip_results
         self._server_port_results = server_port_results
         self._result_files = {}
+        self._shutdown_requested = False
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -29,6 +30,7 @@ class ResultsReceiver:
         Signal handler for graceful shutdown
         """
         if signalnum == signal.SIGTERM:
+            self._shutdown_requested = True
             self.__shutdown()
             
     def __shutdown(self):
@@ -108,4 +110,5 @@ class ResultsReceiver:
             return
         
         self.__receive_results()
-        close_socket(self._results_socket, "results_socket")
+        if not self._shutdown_requested:
+            close_socket(self._results_socket, "results_socket")
