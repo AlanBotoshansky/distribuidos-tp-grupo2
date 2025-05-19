@@ -5,11 +5,12 @@ from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movies_batch import MoviesBatch
+from common.monitorable import Monitorable
 
 PRODUCTION_COUNTRIES_FIELD = 'production_countries'
 RELEASE_DATE_FIELD = 'release_date'
 
-class MoviesFilter:
+class MoviesFilter(Monitorable):
     def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange, cluster_size, id):
         self._filter_field = filter_field
         self._filter_values = filter_values
@@ -35,6 +36,7 @@ class MoviesFilter:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
 
     def __filter_movie(self, movie):
         if not hasattr(movie, self._filter_field) or getattr(movie, self._filter_field) is None:
@@ -100,11 +102,9 @@ class MoviesFilter:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
                                      )
         self._middleware.handle_messages()
-
-        
-        

@@ -5,5 +5,7 @@ COPY /communication /communication
 COPY /utils /utils
 COPY /messages /messages
 COPY /middleware /middleware
+COPY /common /common
+COPY /utils /utils
 WORKDIR /
 ENTRYPOINT ["python3", "main.py"]

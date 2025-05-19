@@ -10,8 +10,9 @@ from messages.movie_credit import MovieCredit
 from messages.movie_credits_batch import MovieCreditsBatch
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
+from common.monitorable import Monitorable
 
-class MoviesJoiner:
+class MoviesJoiner(Monitorable):
     def __init__(self, input_queues, output_exchange, cluster_size, id):
         self._input_queue_movies = input_queues[0]
         self._input_queue_to_join = input_queues[1]
@@ -38,6 +39,7 @@ class MoviesJoiner:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
         
     def __next_id(self):
         """
@@ -171,6 +173,7 @@ class MoviesJoiner:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [
             (self._input_queue_movies[0], self._input_queue_movies[1], self.__handle_movies_batch_packet),
             (self._input_queue_to_join[0], self._input_queue_to_join[1], self.__handle_batch_packet_to_join)

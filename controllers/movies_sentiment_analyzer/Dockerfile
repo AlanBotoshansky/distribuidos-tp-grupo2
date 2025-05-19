@@ -4,5 +4,7 @@ RUN pip install textblob
 COPY controllers/movies_sentiment_analyzer /
 COPY /messages /messages
 COPY /middleware /middleware
+COPY /common /common
+COPY /utils /utils
 WORKDIR /
 ENTRYPOINT ["python3", "main.py"]

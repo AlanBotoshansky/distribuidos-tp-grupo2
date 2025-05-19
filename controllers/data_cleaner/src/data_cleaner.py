@@ -6,10 +6,11 @@ import uuid
 from utils.utils import close_socket
 from src.messages_sender import MessagesSender
 from src.client_handler import ClientHandler
+from common.monitorable import Monitorable
 
 MESSAGES_QUEUE_SIZE = 10000
 
-class DataCleaner:
+class DataCleaner(Monitorable):
     def __init__(self, port, listen_backlog, movies_exchange, ratings_exchange, credits_exchange, max_concurrent_clients):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
@@ -54,6 +55,8 @@ class DataCleaner:
             self._sender_process.terminate()
             self._sender_process.join()
             logging.info("action: sender_process_terminated | result: success")
+            
+        self.stop_receiving_health_checks()
 
     def __accept_new_connection(self):
         """
@@ -78,6 +81,7 @@ class DataCleaner:
         messages_sender.send_messages()
     
     def run(self):
+        self.start_receiving_health_checks()
         data_exchanges = [self._movies_exchange, self._ratings_exchange, self._credits_exchange]
         self._sender_process = mp.Process(target=self.__send_messages, args=(self._messages_queue, data_exchanges))
         self._sender_process.start()
