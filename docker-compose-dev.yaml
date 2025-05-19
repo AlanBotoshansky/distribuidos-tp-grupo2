@@ -178,9 +178,9 @@ services:
     - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
     - CLUSTER_SIZE=3
     - ID=1
-    volumes:
+    volumes: &id001
     - ./controllers/router/config.ini:/config.ini
-    networks:
+    networks: &id002
     - testing_net
   ratings_router_by_movie_id_2:
     container_name: ratings_router_by_movie_id_2
@@ -192,10 +192,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
     - CLUSTER_SIZE=3
     - ID=2
-    volumes:
-    - ./controllers/router/config.ini:/config.ini
-    networks:
-    - testing_net
+    volumes: *id001
+    networks: *id002
   ratings_router_by_movie_id_3:
     container_name: ratings_router_by_movie_id_3
     image: router:latest
@@ -206,10 +204,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
     - CLUSTER_SIZE=3
     - ID=3
-    volumes:
-    - ./controllers/router/config.ini:/config.ini
-    networks:
-    - testing_net
+    volumes: *id001
+    networks: *id002
   movies_ratings_joiner_1:
     container_name: movies_ratings_joiner_1
     image: movies_joiner:latest
@@ -245,9 +241,9 @@ services:
     - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
     - ID=1
-    volumes:
+    volumes: &id003
     - ./controllers/router/config.ini:/config.ini
-    networks:
+    networks: &id004
     - testing_net
   credits_router_by_movie_id_2:
     container_name: credits_router_by_movie_id_2
@@ -259,10 +255,8 @@ services:
     - OUTPUT_EXCHANGE_PREFIXES=["credits"]
     - CLUSTER_SIZE=2
     - ID=2
-    volumes:
-    - ./controllers/router/config.ini:/config.ini
-    networks:
-    - testing_net
+    volumes: *id003
+    networks: *id004
   movies_credits_joiner_1:
     container_name: movies_credits_joiner_1
     image: movies_joiner:latest
@@ -314,6 +308,33 @@ services:
     - ./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini
     networks:
     - testing_net
+  health_guard_1:
+    container_name: health_guard_1
+    image: health_guard:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - PYTHONHASHSEED=0
+    - COMPOSE_PROJECT_NAME=tp
+    - DONT_GUARD_CONTAINERS=["rabbitmq", "client", "health_guard"]
+    - CLUSTER_SIZE=2
+    - ID=1
+    volumes: &id005
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./health_guard/config.ini:/config.ini
+    networks: &id006
+    - testing_net
+  health_guard_2:
+    container_name: health_guard_2
+    image: health_guard:latest
+    environment:
+    - PYTHONUNBUFFERED=1
+    - PYTHONHASHSEED=0
+    - COMPOSE_PROJECT_NAME=tp
+    - DONT_GUARD_CONTAINERS=["rabbitmq", "client", "health_guard"]
+    - CLUSTER_SIZE=2
+    - ID=2
+    volumes: *id005
+    networks: *id006
 networks:
   testing_net:
     ipam:

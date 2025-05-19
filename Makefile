@@ -15,6 +15,7 @@ docker-image:
 	docker build -f ./controllers/movies_sentiment_analyzer/Dockerfile -t "movies_sentiment_analyzer:latest" .
 	docker build -f ./controllers/avg_rate_revenue_budget_calculator/Dockerfile -t "avg_rate_revenue_budget_calculator:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
+	docker build -f ./health_guard/Dockerfile -t "health_guard:latest" .
 	# Execute this command from time to time to clean up intermediate stages generated 
 	# during client build (your hard drive will like this :) ). Don't left uncommented if you 
 	# want to avoid rebuilding client image every time the docker-compose-up command 
