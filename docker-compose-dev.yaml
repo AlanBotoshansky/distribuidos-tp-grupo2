@@ -315,7 +315,8 @@ services:
     - PYTHONUNBUFFERED=1
     - PYTHONHASHSEED=0
     - COMPOSE_PROJECT_NAME=tp
-    - DONT_GUARD_CONTAINERS=["rabbitmq", "client", "health_guard"]
+    - DONT_GUARD_CONTAINERS=["rabbitmq", "client"]
+    - SERVICE_PREFIX=health_guard
     - CLUSTER_SIZE=2
     - ID=1
     volumes: &id005
@@ -330,7 +331,8 @@ services:
     - PYTHONUNBUFFERED=1
     - PYTHONHASHSEED=0
     - COMPOSE_PROJECT_NAME=tp
-    - DONT_GUARD_CONTAINERS=["rabbitmq", "client", "health_guard"]
+    - DONT_GUARD_CONTAINERS=["rabbitmq", "client"]
+    - SERVICE_PREFIX=health_guard
     - CLUSTER_SIZE=2
     - ID=2
     volumes: *id005

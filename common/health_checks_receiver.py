@@ -27,13 +27,13 @@ class HealthChecksReceiver:
         while not self._shutdown_requested:
             try:
                 s, addr = self._socket.accept()
-                logging.info(f"action: received_health_check | result: success | from: {addr}")
+                logging.debug(f"action: received_health_check | result: success | from: {addr}")
+                try:
+                    s.shutdown(socket.SHUT_RDWR)
+                    s.close()
+                except OSError:
+                    pass
             except OSError as e:
                 if self._shutdown_requested:
                     break
                 logging.error(f"action: accept_connection | result: fail | error: {e}")
-            try:
-                s.shutdown(socket.SHUT_RDWR)
-                s.close()
-            except OSError:
-                continue

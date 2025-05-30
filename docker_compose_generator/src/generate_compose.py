@@ -482,15 +482,17 @@ def generate_health_guard_cluster(cluster_size):
     Returns:
         Dictionary mapping service names to their configurations
     """
+    service_prefix = "health_guard"
     return generate_cluster(
         cluster_size=cluster_size,
-        service_prefix="health_guard",
+        service_prefix=service_prefix,
         image="health_guard",
         environment=[
             "PYTHONUNBUFFERED=1",
             "PYTHONHASHSEED=0",
             f"COMPOSE_PROJECT_NAME={COMPOSE_PROJECT_NAME}",
-            'DONT_GUARD_CONTAINERS=["rabbitmq", "client", "health_guard"]'
+            'DONT_GUARD_CONTAINERS=["rabbitmq", "client"]',
+            f"SERVICE_PREFIX={service_prefix}",
         ],
         volumes=[
             "/var/run/docker.sock:/var/run/docker.sock",

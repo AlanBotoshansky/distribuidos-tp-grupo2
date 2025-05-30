@@ -28,6 +28,7 @@ def initialize_config():
         config_params["seconds_between_health_checks"] = int(os.getenv('SECONDS_BETWEEN_HEALTH_CHECKS', config["DEFAULT"]["SECONDS_BETWEEN_HEALTH_CHECKS"]))
         config_params["compose_project_name"] = os.getenv('COMPOSE_PROJECT_NAME')
         config_params["dont_guard_containers"] = ast.literal_eval(os.getenv('DONT_GUARD_CONTAINERS'))
+        config_params["service_prefix"] = os.getenv('SERVICE_PREFIX')
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
         config_params["id"] = int(os.getenv('ID'))
     except KeyError as e:
@@ -57,6 +58,7 @@ def main():
     seconds_between_health_checks = config_params["seconds_between_health_checks"]
     compose_project_name = config_params["compose_project_name"]
     dont_guard_containers = config_params["dont_guard_containers"]
+    service_prefix = config_params["service_prefix"]
     cluster_size = config_params["cluster_size"]
     id = config_params["id"]
     
@@ -64,9 +66,9 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | health_check_port: {health_check_port} | seconds_between_health_checks: {seconds_between_health_checks} | compose_project_name: {compose_project_name} | dont_guard_containers: {dont_guard_containers} | cluster_size: {cluster_size} | id: {id}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | health_check_port: {health_check_port} | seconds_between_health_checks: {seconds_between_health_checks} | compose_project_name: {compose_project_name} | dont_guard_containers: {dont_guard_containers} | service_prefix: {service_prefix} | cluster_size: {cluster_size} | id: {id}")
 
-    health_guard = HealthGuard(health_check_port, seconds_between_health_checks, compose_project_name, dont_guard_containers, cluster_size, id)
+    health_guard = HealthGuard(health_check_port, seconds_between_health_checks, compose_project_name, dont_guard_containers, service_prefix, cluster_size, id)
     health_guard.run()
 
 if __name__ == "__main__":
