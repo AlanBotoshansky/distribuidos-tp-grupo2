@@ -5,8 +5,9 @@ import multiprocessing as mp
 import communication.communication as communication
 from utils.utils import close_socket
 from src.query_results_handler import QueryResultsHandler
+from common.monitorable import Monitorable
 
-class ResultsHandler:
+class ResultsHandler(Monitorable):
     def __init__(self, port, listen_backlog, input_queues):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
@@ -48,6 +49,8 @@ class ResultsHandler:
             logging.info("action: query_results_handler_terminated | result: success")
 
         close_socket(self._server_socket, "server_socket")
+        
+        self.stop_receiving_health_checks()
 
     def __accept_new_connection(self):
         """
@@ -102,14 +105,7 @@ class ResultsHandler:
         self._client_socks[client_id] = client_sock
     
     def run(self):
-        """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again.
-        The loop will continue until a SIGTERM signal is received.
-        """
+        self.start_receiving_health_checks()
         self.__start_sender_process()
         self.__start_query_results_handlers()
         

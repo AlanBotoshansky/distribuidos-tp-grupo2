@@ -6,8 +6,9 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
+from common.monitorable import Monitorable
 
-class MostLeastRatedMoviesCalculator:
+class MostLeastRatedMoviesCalculator(Monitorable):
     def __init__(self, input_queues, output_exchange):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
@@ -29,6 +30,7 @@ class MostLeastRatedMoviesCalculator:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
     
     def __update_movie_ratings(self, movie_ratings_batch):
         client_id = movie_ratings_batch.client_id
@@ -82,11 +84,9 @@ class MostLeastRatedMoviesCalculator:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
                                      )
         self._middleware.handle_messages()
-
-        
-        

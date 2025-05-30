@@ -7,11 +7,12 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.analyzed_movie import Sentiment, AnalyzedMovie
 from messages.analyzed_movies_batch import AnalyzedMoviesBatch
+from common.monitorable import Monitorable
 
 ANALYSIS_TYPE = "sentiment-analysis"
 OVERVIEW_FIELD = 'overview'
 
-class MoviesSentimentAnalyzer:
+class MoviesSentimentAnalyzer(Monitorable):
     def __init__(self, field_to_analyze, input_queues, output_exchange, cluster_size, id):
         self._field_to_analyze = field_to_analyze
         self._input_queues = input_queues
@@ -36,6 +37,7 @@ class MoviesSentimentAnalyzer:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
     
     def __analyze_movies(self, movies_batch):
         analyzed_movies = []
@@ -80,6 +82,7 @@ class MoviesSentimentAnalyzer:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,

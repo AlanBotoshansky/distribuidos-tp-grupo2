@@ -5,8 +5,9 @@ from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.avg_rate_revenue_budget import AvgRateRevenueBudget
+from common.monitorable import Monitorable
 
-class AvgRateRevenueBudgetCalculator:
+class AvgRateRevenueBudgetCalculator(Monitorable):
     def __init__(self, input_queues, output_exchange):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
@@ -28,6 +29,7 @@ class AvgRateRevenueBudgetCalculator:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
         client_id = analyzed_movies_batch.client_id
@@ -74,11 +76,9 @@ class AvgRateRevenueBudgetCalculator:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
                                      )
         self._middleware.handle_messages()
-
-        
-        

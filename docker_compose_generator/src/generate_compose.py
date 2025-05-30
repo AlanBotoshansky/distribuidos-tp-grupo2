@@ -1,3 +1,6 @@
+COMPOSE_PROJECT_NAME = 'tp'
+NETWORK_NAME = 'testing_net'
+
 def generate_service(name, image, container_name=None, environment=None, volumes=None, networks=None, depends_on=None):
     """
     Generic function to generate a service configuration for docker-compose.
@@ -33,6 +36,43 @@ def generate_service(name, image, container_name=None, environment=None, volumes
     
     return service
 
+def generate_cluster(cluster_size, service_prefix, image, container_prefix=None, environment=[], volumes=None, networks=None, depends_on=None):
+    """
+    Generic function to generate a cluster of services
+    
+    Args:
+        cluster_size: Number of instances to create
+        service_prefix: Prefix for the service names
+        image: Docker image name
+        container_prefix: Prefix for the container names
+        environment: List of environment variables
+        volumes: List of volume mappings
+        networks: List of network names
+        depends_on: List of services this service depends on
+        
+    Returns:
+        Dictionary mapping service names to their configurations
+    """
+    services = {}
+    
+    for i in range(1, cluster_size + 1):
+        service_name = f"{service_prefix}_{i}"
+        container_name = f"{container_prefix}_{i}" if container_prefix else service_name
+        service_environment = environment.copy()
+        service_environment.append(f"CLUSTER_SIZE={cluster_size}")
+        service_environment.append(f"ID={i}")
+        services[service_name] = generate_service(
+            name=service_name,
+            image=image,
+            container_name=container_name,
+            environment=service_environment,
+            volumes=volumes,
+            networks=networks,
+            depends_on=depends_on
+        )
+    
+    return services
+
 def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_values, output_fields_subset, input_queues, output_exchange):
     """
     Generic function to generate a cluster of filter services
@@ -48,34 +88,26 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
         
     Returns:
         Dictionary mapping service names to their configurations
-    """
-    services = {}
-    cluster_size = int(cluster_size)
-    
-    for i in range(1, cluster_size + 1):
-        service_name = f"{service_prefix}_{i}"
-        services[service_name] = generate_service(
-            name=service_name,
-            image="movies_filter",
-            environment=[
-                "PYTHONUNBUFFERED=1",
-                f"FILTER_FIELD={filter_field}",
-                f"FILTER_VALUES={filter_values}",
-                f"OUTPUT_FIELDS_SUBSET={output_fields_subset}",
-                f"INPUT_QUEUES={input_queues}",
-                f"OUTPUT_EXCHANGE={output_exchange}",
-                f"CLUSTER_SIZE={cluster_size}",
-                f"ID={i}"
-            ],
-            volumes=[
-                "./controllers/movies_filter/config.ini:/config.ini"
-            ],
-            networks=[
-                "testing_net"
-            ]
-        )
-    
-    return services
+    """    
+    return generate_cluster(
+        cluster_size=cluster_size,
+        service_prefix=service_prefix,
+        image="movies_filter",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            f"FILTER_FIELD={filter_field}",
+            f"FILTER_VALUES={filter_values}",
+            f"OUTPUT_FIELDS_SUBSET={output_fields_subset}",
+            f"INPUT_QUEUES={input_queues}",
+            f"OUTPUT_EXCHANGE={output_exchange}",
+        ],
+        volumes=[
+            "./controllers/movies_filter/config.ini:/config.ini"
+        ],
+        networks=[
+            NETWORK_NAME
+        ]
+    )
 
 def generate_routing_cluster(cluster_size, destination_nodes_amount, service_prefix, input_queues, output_exchange_prefixes):
     """
@@ -90,32 +122,24 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
         
     Returns:
         Dictionary mapping service names to their configurations
-    """
-    services = {}
-    cluster_size = int(cluster_size)
-    
-    for i in range(1, cluster_size + 1):
-        service_name = f"{service_prefix}_{i}"
-        services[service_name] = generate_service(
-            name=service_name,
-            image="router",
-            environment=[
-                "PYTHONUNBUFFERED=1",
-                f"DESTINATION_NODES_AMOUNT={destination_nodes_amount}",
-                f"INPUT_QUEUES={input_queues}",
-                f"OUTPUT_EXCHANGE_PREFIXES={output_exchange_prefixes}",
-                f"CLUSTER_SIZE={cluster_size}",
-                f"ID={i}"
-            ],
-            volumes=[
-                "./controllers/router/config.ini:/config.ini"
-            ],
-            networks=[
-                "testing_net"
-            ]
-        )
-    
-    return services
+    """    
+    return generate_cluster(
+        cluster_size=cluster_size,
+        service_prefix=service_prefix,
+        image="router",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            f"DESTINATION_NODES_AMOUNT={destination_nodes_amount}",
+            f"INPUT_QUEUES={input_queues}",
+            f"OUTPUT_EXCHANGE_PREFIXES={output_exchange_prefixes}",
+        ],
+        volumes=[
+            "./controllers/router/config.ini:/config.ini"
+        ],
+        networks=[
+            NETWORK_NAME
+        ]
+    )
 
 def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes, output_exchange):
     """
@@ -150,7 +174,7 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
                 f"./controllers/movies_joiner/config.ini:/config.ini"
             ],
             networks=[
-                "testing_net"
+                NETWORK_NAME
             ]
         )
     
@@ -170,31 +194,23 @@ def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, fie
     Returns:
         Dictionary mapping service names to their configurations
     """
-    services = {}
-    cluster_size = int(cluster_size)
-    
-    for i in range(1, cluster_size + 1):
-        service_name = f"{service_prefix}_{i}"
-        services[service_name] = generate_service(
-            name=service_name,
-            image="movies_sentiment_analyzer",
-            environment=[
-                "PYTHONUNBUFFERED=1",
-                f"FIELD_TO_ANALYZE={field_to_analyze}",
-                f"INPUT_QUEUES={input_queues}",
-                f"OUTPUT_EXCHANGE={output_exchange}",
-                f"CLUSTER_SIZE={cluster_size}",
-                f"ID={i}"
-            ],
-            volumes=[
-                "./controllers/movies_sentiment_analyzer/config.ini:/config.ini"
-            ],
-            networks=[
-                "testing_net"
-            ]
-        )
-    
-    return services
+    return generate_cluster(
+        cluster_size=cluster_size,
+        service_prefix=service_prefix,
+        image="movies_sentiment_analyzer",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            f"FIELD_TO_ANALYZE={field_to_analyze}",
+            f"INPUT_QUEUES={input_queues}",
+            f"OUTPUT_EXCHANGE={output_exchange}",
+        ],
+        volumes=[
+            "./controllers/movies_sentiment_analyzer/config.ini:/config.ini"
+        ],
+        networks=[
+            NETWORK_NAME
+        ]
+    )
 
 def generate_data_cleaner():
     """Generate data_cleaner service configuration"""
@@ -211,7 +227,7 @@ def generate_data_cleaner():
             "./controllers/data_cleaner/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
         ]
     )
 
@@ -228,7 +244,7 @@ def generate_results_handler():
             "./controllers/results_handler/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
         ]
     )
 
@@ -254,7 +270,7 @@ def generate_clients(n):
                 f"./results/client_{i}:/results/client_{i}"
             ],
             networks=[
-                "testing_net"
+                NETWORK_NAME
             ],
             depends_on=[
                 "data_cleaner",
@@ -315,7 +331,7 @@ def generate_top_investor_countries_calculator():
             "./controllers/top_investor_countries_calculator/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
         ]
     )
     
@@ -386,7 +402,7 @@ def generate_most_least_rated_movies_calculator():
             "./controllers/most_least_rated_movies_calculator/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
         ]
     )
     
@@ -424,7 +440,7 @@ def generate_top_actors_participation_calculator():
             "./controllers/top_actors_participation_calculator/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
         ]
     )
     
@@ -452,14 +468,45 @@ def generate_avg_rate_revenue_budget_calculator():
             "./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini"
         ],
         networks=[
-            "testing_net"
+            NETWORK_NAME
+        ]
+    )
+    
+def generate_health_guard_cluster(cluster_size):
+    """
+    Generic function to generate a cluster of health guard services
+    
+    Args:
+        cluster_size: Number of instances to create
+        
+    Returns:
+        Dictionary mapping service names to their configurations
+    """
+    service_prefix = "health_guard"
+    return generate_cluster(
+        cluster_size=cluster_size,
+        service_prefix=service_prefix,
+        image="health_guard",
+        environment=[
+            "PYTHONUNBUFFERED=1",
+            "PYTHONHASHSEED=0",
+            f"COMPOSE_PROJECT_NAME={COMPOSE_PROJECT_NAME}",
+            'DONT_GUARD_CONTAINERS=["rabbitmq", "client"]',
+            f"SERVICE_PREFIX={service_prefix}",
+        ],
+        volumes=[
+            "/var/run/docker.sock:/var/run/docker.sock",
+            "./health_guard/config.ini:/config.ini"
+        ],
+        networks=[
+            NETWORK_NAME
         ]
     )
 
 def generate_network_config():
     """Generate the network configuration for the docker-compose file"""
     return {
-        "testing_net": {
+        NETWORK_NAME: {
             "ipam": {
                 "driver": "default",
                 "config": [
@@ -480,7 +527,7 @@ def generate_docker_compose(config_params):
         Dictionary with complete docker-compose configuration
     """
     docker_compose = {
-        "name": "tp",
+        "name": COMPOSE_PROJECT_NAME,
         "services": {},
         "networks": generate_network_config()
     }
@@ -552,5 +599,11 @@ def generate_docker_compose(config_params):
     )
     docker_compose["services"].update(movies_sentiment_analyzer_cluster)
     docker_compose["services"]["avg_rate_revenue_budget_calculator"] = generate_avg_rate_revenue_budget_calculator()
+    
+    # Health guards
+    health_guard_cluster = generate_health_guard_cluster(
+        config_params["health_guard"]
+    )
+    docker_compose["services"].update(health_guard_cluster)
     
     return docker_compose

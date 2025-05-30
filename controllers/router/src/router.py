@@ -7,8 +7,9 @@ from messages.packet_type import PacketType
 from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.credits_batch import CreditsBatch
+from common.monitorable import Monitorable
 
-class Router:
+class Router(Monitorable):
     def __init__(self, destination_nodes_amount, input_queues, output_exchange_prefixes, cluster_size, id):
         self.destination_nodes_amount = destination_nodes_amount
         self._input_queues = input_queues
@@ -32,6 +33,7 @@ class Router:
         Cleanup resources during shutdown
         """
         self._middleware.stop()
+        self.stop_receiving_health_checks()
     
     def __hash_id(self, id):
         return (id % self.destination_nodes_amount) + 1
@@ -117,9 +119,7 @@ class Router:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
     def run(self):
+        self.start_receiving_health_checks()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions)
         self._middleware.handle_messages()
-
-        
-        

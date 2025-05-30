@@ -22,6 +22,7 @@ def initialize_config():
         config_params["credits_router_by_movie_id"] = int(config["CLUSTER_SIZES"]["CREDITS_ROUTER_BY_MOVIE_ID"])
         config_params["movies_credits_joiner"] = int(config["CLUSTER_SIZES"]["MOVIES_CREDITS_JOINER"])
         config_params["movies_sentiment_analyzer"] = int(config["CLUSTER_SIZES"]["MOVIES_SENTIMENT_ANALYZER"])
+        config_params["health_guard"] = int(config["CLUSTER_SIZES"]["HEALTH_GUARD"])
         config_params["clients"] = int(config["CLIENTS"]["CLIENTS"])
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
