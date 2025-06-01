@@ -158,10 +158,9 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]
-    - OUTPUT_EXCHANGE_PREFIXES=["movies_produced_in_argentina_released_after_2000_q3",
-      "movies_produced_in_argentina_released_after_2000_q4"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("movies_produced_in_argentina_released_after_2000_q3",
+      1), ("movies_produced_in_argentina_released_after_2000_q4", 1)]
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
@@ -173,9 +172,8 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("ratings", "ratings")]
-    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("ratings", 1)]
     - CLUSTER_SIZE=3
     - ID=1
     volumes: &id001
@@ -187,9 +185,8 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("ratings", "ratings")]
-    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("ratings", 1)]
     - CLUSTER_SIZE=3
     - ID=2
     volumes: *id001
@@ -199,9 +196,8 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("ratings", "ratings")]
-    - OUTPUT_EXCHANGE_PREFIXES=["ratings"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("ratings", 1)]
     - CLUSTER_SIZE=3
     - ID=3
     volumes: *id001
@@ -236,9 +232,8 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("credits", "credits")]
-    - OUTPUT_EXCHANGE_PREFIXES=["credits"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("credits", 1)]
     - CLUSTER_SIZE=2
     - ID=1
     volumes: &id003
@@ -250,9 +245,8 @@ services:
     image: router:latest
     environment:
     - PYTHONUNBUFFERED=1
-    - DESTINATION_NODES_AMOUNT=1
     - INPUT_QUEUES=[("credits", "credits")]
-    - OUTPUT_EXCHANGE_PREFIXES=["credits"]
+    - OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT=[("credits", 1)]
     - CLUSTER_SIZE=2
     - ID=2
     volumes: *id003

@@ -109,7 +109,7 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
         ]
     )
 
-def generate_routing_cluster(cluster_size, destination_nodes_amount, service_prefix, input_queues, output_exchange_prefixes):
+def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_exchange_prefixes_and_dest_nodes_amount):
     """
     Generic function to generate a cluster of routing services
     
@@ -129,9 +129,8 @@ def generate_routing_cluster(cluster_size, destination_nodes_amount, service_pre
         image="router",
         environment=[
             "PYTHONUNBUFFERED=1",
-            f"DESTINATION_NODES_AMOUNT={destination_nodes_amount}",
             f"INPUT_QUEUES={input_queues}",
-            f"OUTPUT_EXCHANGE_PREFIXES={output_exchange_prefixes}",
+            f"OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT={output_exchange_prefixes_and_dest_nodes_amount}",
         ],
         volumes=[
             "./controllers/router/config.ini:/config.ini"
@@ -359,24 +358,22 @@ def generate_movies_filter_date_after_2000_cluster(cluster_size):
         output_exchange="movies_produced_in_argentina_released_after_2000"
     )
     
-def generate_movies_router_by_id_cluster(cluster_size, destination_nodes_amount):
-    """Generate the movies router services for routing by ID"""
+def generate_movies_router_by_id_cluster(cluster_size, movies_ratings_joiner_amount, movies_credits_joiner_amount):
+    """Generate the movies router services for routing by ID"""    
     return generate_routing_cluster(
         cluster_size=cluster_size,
-        destination_nodes_amount=destination_nodes_amount,
         service_prefix="movies_router_by_id",
         input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
-        output_exchange_prefixes='["movies_produced_in_argentina_released_after_2000_q3", "movies_produced_in_argentina_released_after_2000_q4"]'
-    )
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("movies_produced_in_argentina_released_after_2000_q3", {movies_ratings_joiner_amount}), ("movies_produced_in_argentina_released_after_2000_q4", {movies_credits_joiner_amount})]'
+    ) 
     
 def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
     """Generate the ratings router services for routing by movie ID"""
     return generate_routing_cluster(
         cluster_size=cluster_size,
-        destination_nodes_amount=destination_nodes_amount,
         service_prefix="ratings_router_by_movie_id",
         input_queues='[("ratings", "ratings")]',
-        output_exchange_prefixes='["ratings"]'
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("ratings", {destination_nodes_amount})]'
     )
     
 def generate_movies_ratings_joiner_cluster(cluster_size):
@@ -410,10 +407,9 @@ def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_
     """Generate the credits router services for routing by movie ID"""
     return generate_routing_cluster(
         cluster_size=cluster_size,
-        destination_nodes_amount=destination_nodes_amount,
         service_prefix="credits_router_by_movie_id",
         input_queues='[("credits", "credits")]',
-        output_exchange_prefixes='["credits"]'
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("credits", {destination_nodes_amount})]'
     )
     
 def generate_movies_credits_joiner_cluster(cluster_size):
@@ -565,7 +561,8 @@ def generate_docker_compose(config_params):
     docker_compose["services"].update(movies_filter_date_after_2000_cluster)
     movies_router_by_id_cluster = generate_movies_router_by_id_cluster(
         config_params["movies_router_by_id"],
-        config_params["movies_ratings_joiner"]
+        config_params["movies_ratings_joiner"],
+        config_params["movies_credits_joiner"]
     )
     docker_compose["services"].update(movies_router_by_id_cluster)
     
@@ -584,7 +581,7 @@ def generate_docker_compose(config_params):
     # Query 4
     credits_router_by_movie_id_cluster = generate_credits_router_by_movie_id_cluster(
         config_params["credits_router_by_movie_id"],
-        config_params["movies_ratings_joiner"]
+        config_params["movies_credits_joiner"]
     )
     docker_compose["services"].update(credits_router_by_movie_id_cluster)
     movies_credits_joiner_cluster = generate_movies_credits_joiner_cluster(

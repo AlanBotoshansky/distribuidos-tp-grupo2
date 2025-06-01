@@ -24,9 +24,8 @@ def initialize_config():
     config_params = {}
     try:
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["destination_nodes_amount"] = int(os.getenv('DESTINATION_NODES_AMOUNT'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
-        config_params["output_exchange_prefixes"] = ast.literal_eval(os.getenv('OUTPUT_EXCHANGE_PREFIXES'))
+        config_params["output_exchange_prefixes_and_dest_nodes_amount"] = ast.literal_eval(os.getenv('OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT'))
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
         config_params["id"] = os.getenv('ID')
     except KeyError as e:
@@ -52,9 +51,8 @@ def initialize_log(logging_level):
 def main():
     config_params = initialize_config()
     logging_level = config_params["logging_level"]
-    destination_nodes_amount = config_params["destination_nodes_amount"]
     input_queues = config_params["input_queues"]
-    output_exchange_prefixes = config_params["output_exchange_prefixes"]
+    output_exchange_prefixes_and_dest_nodes_amount = config_params["output_exchange_prefixes_and_dest_nodes_amount"]
     cluster_size = config_params["cluster_size"]
     id = config_params["id"]
     
@@ -62,9 +60,9 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | destination_nodes_amount: {destination_nodes_amount} | input_queues: {input_queues} | output_exchange_prefixes: {output_exchange_prefixes} | cluster_size: {cluster_size} | id: {id}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | input_queues: {input_queues} | output_exchange_prefixes_and_dest_nodes_amount: {output_exchange_prefixes_and_dest_nodes_amount} | cluster_size: {cluster_size} | id: {id}")
 
-    router = Router(destination_nodes_amount, input_queues, output_exchange_prefixes, cluster_size, id)
+    router = Router(input_queues, output_exchange_prefixes_and_dest_nodes_amount, cluster_size, id)
     router.run()
 
 if __name__ == "__main__":

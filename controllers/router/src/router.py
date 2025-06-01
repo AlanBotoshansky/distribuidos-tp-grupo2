@@ -10,10 +10,9 @@ from messages.credits_batch import CreditsBatch
 from common.monitorable import Monitorable
 
 class Router(Monitorable):
-    def __init__(self, destination_nodes_amount, input_queues, output_exchange_prefixes, cluster_size, id):
-        self.destination_nodes_amount = destination_nodes_amount
+    def __init__(self, input_queues, output_exchange_prefixes_and_dest_nodes_amount, cluster_size, id):
         self._input_queues = input_queues
-        self._output_exchange_prefixes = output_exchange_prefixes
+        self._output_exchange_prefixes_and_dest_nodes_amount = output_exchange_prefixes_and_dest_nodes_amount
         self._cluster_size = cluster_size
         self._id = id
         self._middleware = None
@@ -35,8 +34,8 @@ class Router(Monitorable):
         self._middleware.stop()
         self.stop_receiving_health_checks()
     
-    def __hash_id(self, id):
-        return (id % self.destination_nodes_amount) + 1
+    def __hash_id(self, id, dest_nodes_amount):
+        return (id % dest_nodes_amount) + 1
     
     def __route_batch(self, batch, get_hash_id, batch_class, log_action_prefix):
         """
@@ -48,15 +47,14 @@ class Router(Monitorable):
             batch_class: Class to instantiate for creating new batches
             log_action_prefix: Prefix for the log action message
         """
-        batches = {}
+        for output_exchange_prefix, dest_nodes_amount in self._output_exchange_prefixes_and_dest_nodes_amount:
+            batches = {}
+            for item in batch.get_items():
+                destination_id = self.__hash_id(get_hash_id(item), dest_nodes_amount)
+                destination_batch = batches.get(destination_id, batch_class(batch.client_id, []))
+                destination_batch.add_item(item)
+                batches[destination_id] = destination_batch
         
-        for item in batch.get_items():
-            destination_id = self.__hash_id(get_hash_id(item))
-            destination_batch = batches.get(destination_id, batch_class(batch.client_id, []))
-            destination_batch.add_item(item)
-            batches[destination_id] = destination_batch
-        
-        for output_exchange_prefix in self._output_exchange_prefixes:
             for destination_id, dest_batch in batches.items():
                 output_exchange = f"{output_exchange_prefix}_{destination_id}"
                 self._middleware.send_message(PacketSerde.serialize(dest_batch), exchange=output_exchange)
@@ -87,8 +85,8 @@ class Router(Monitorable):
         )
         
     def __send_message_to_all_destination_nodes(self, msg):
-        for output_exchange_prefix in self._output_exchange_prefixes:
-            for i in range(1, self.destination_nodes_amount + 1):
+        for output_exchange_prefix, dest_nodes_amount in self._output_exchange_prefixes_and_dest_nodes_amount:
+            for i in range(1, dest_nodes_amount + 1):
                 output_exchange = f"{output_exchange_prefix}_{i}"
                 self._middleware.send_message(PacketSerde.serialize(msg), exchange=output_exchange)
                 logging.info(f"action: sent_eof | result: success | destination_id: {i}")
