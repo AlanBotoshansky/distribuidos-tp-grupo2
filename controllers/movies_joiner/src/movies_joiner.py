@@ -160,6 +160,7 @@ class MoviesJoiner(Monitorable):
             self._all_movies_received_of_clients.remove(client_id)
         if client_id in self._movies:
             self._movies.pop(client_id)
+            self.storage_adapter.delete(MOVIES_FILE_KEY, secondary_file_key=client_id)
         if client_id in self._should_reenqueue_eof_of_clients:
             self._should_reenqueue_eof_of_clients.remove(client_id)
         

@@ -13,10 +13,13 @@ class StorageAdapter:
         except Exception as e:
             logging.error(f"Failed to create storage directory at {storage_path}: {e}")
         pass
+    
+    def __get_file_path(self, file_key, secondary_file_key=None):
+        path = f"{file_key}{secondary_file_key}" if secondary_file_key else file_key
+        return os.path.join(self.storage_path, path)
 
     def append(self, file_key, key, value=None, secondary_file_key=None):
-        path = f"{file_key}{secondary_file_key}" if secondary_file_key else file_key
-        file_path = os.path.join(self.storage_path, path)
+        file_path = self.__get_file_path(file_key, secondary_file_key)
         try:
             if value is None:
                 data_bytes = key.encode('utf-8')
@@ -26,9 +29,17 @@ class StorageAdapter:
             with open(file_path, 'ab') as f:
                 f.write(len_data_bytes + data_bytes)
                 f.flush()
-            logging.debug(f"action: append_data_to_storage | result: success | key: {key} | value: {value} | path: {path}")
+            logging.debug(f"action: append_data_to_storage | result: success | key: {key} | value: {value} | file_path: {file_path}")
         except Exception as e:
             logging.error(f"action: append_data_to_storage | result: fail | error: {e}")
+            
+    def delete(self, file_key, secondary_file_key=None):
+        file_path = self.__get_file_path(file_key, secondary_file_key)
+        try:
+            os.remove(file_path)
+            logging.debug(f"action: delete_file_from_storage | result: success | path: {file_path}")
+        except Exception as e:
+            logging.error(f"action: delete_file_from_storage | result: fail | error: {e} | path: {file_path}")   
     
     def __load_data_from_file(self, file_path):
         data = {}
