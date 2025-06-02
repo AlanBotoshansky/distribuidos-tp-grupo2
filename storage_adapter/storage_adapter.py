@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 
 LENGTH_DATA_BYTES = 3
 KEY_VALUE_SEPARATOR = ','
@@ -17,17 +18,24 @@ class StorageAdapter:
     def __get_file_path(self, file_key, secondary_file_key=None):
         path = f"{file_key}{secondary_file_key}" if secondary_file_key else file_key
         return os.path.join(self.storage_path, path)
+    
+    def __get_temp_file_path(self):
+        path = f"{uuid.uuid4()}"
+        return os.path.join(self.storage_path, path)
+    
+    def __encode_key_value(self, key, value=None):
+        if value is None:
+            data_bytes = key.encode('utf-8')
+        else:
+            data_bytes = f'{key}{KEY_VALUE_SEPARATOR}{value}'.encode('utf-8')
+        len_data_bytes = len(data_bytes).to_bytes(LENGTH_DATA_BYTES, 'big')
+        return len_data_bytes + data_bytes
 
     def append(self, file_key, key, value=None, secondary_file_key=None):
         file_path = self.__get_file_path(file_key, secondary_file_key)
         try:
-            if value is None:
-                data_bytes = key.encode('utf-8')
-            else:
-                data_bytes = f'{key}{KEY_VALUE_SEPARATOR}{value}'.encode('utf-8')
-            len_data_bytes = len(data_bytes).to_bytes(LENGTH_DATA_BYTES, 'big')
             with open(file_path, 'ab') as f:
-                f.write(len_data_bytes + data_bytes)
+                f.write(self.__encode_key_value(key, value))
                 f.flush()
             logging.debug(f"action: append_data_to_storage | result: success | key: {key} | value: {value} | file_path: {file_path}")
         except Exception as e:
@@ -39,7 +47,24 @@ class StorageAdapter:
             os.remove(file_path)
             logging.debug(f"action: delete_file_from_storage | result: success | path: {file_path}")
         except Exception as e:
-            logging.error(f"action: delete_file_from_storage | result: fail | error: {e} | path: {file_path}")   
+            logging.error(f"action: delete_file_from_storage | result: fail | error: {e} | path: {file_path}")
+            
+    def update(self, file_key, data, secondary_file_key=None):
+        file_path = self.__get_file_path(file_key, secondary_file_key)
+        temp_file_path = self.__get_temp_file_path()
+        try:
+            with open(temp_file_path, 'wb') as temp_f:
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        temp_f.write(self.__encode_key_value(key, value))
+                elif isinstance(data, set):
+                    for key in data:
+                        temp_f.write(self.__encode_key_value(key))
+                temp_f.flush()
+            os.replace(temp_file_path, file_path)
+            logging.debug(f"action: update_data_in_storage | result: success | file_path: {file_path}")
+        except Exception as e:
+            logging.error(f"action: update_data_in_storage | result: fail | error: {e} | path: {file_path}")
     
     def __load_data_from_file(self, file_path):
         data = {}
