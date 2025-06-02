@@ -212,8 +212,10 @@ services:
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=1
     - ID=1
+    - STORAGE_PATH=/storage
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
+    - movies_ratings_joiner_1_storage:/storage
     networks:
     - testing_net
   most_least_rated_movies_calculator:
@@ -261,8 +263,10 @@ services:
     - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
     - CLUSTER_SIZE=1
     - ID=1
+    - STORAGE_PATH=/storage
     volumes:
     - ./controllers/movies_joiner/config.ini:/config.ini
+    - movies_credits_joiner_1_storage:/storage
     networks:
     - testing_net
   top_actors_participation_calculator:
@@ -337,3 +341,6 @@ networks:
       driver: default
       config:
       - subnet: 172.25.125.0/24
+volumes:
+  movies_ratings_joiner_1_storage: null
+  movies_credits_joiner_1_storage: null

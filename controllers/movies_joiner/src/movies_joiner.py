@@ -11,9 +11,12 @@ from messages.movie_credits_batch import MovieCreditsBatch
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from common.monitorable import Monitorable
+from storage_adapter.storage_adapter import StorageAdapter
+
+MOVIES_FILE_KEY = "movies"
 
 class MoviesJoiner(Monitorable):
-    def __init__(self, input_queues, output_exchange, cluster_size, id):
+    def __init__(self, input_queues, output_exchange, cluster_size, id, storage_path):
         self._input_queue_movies = input_queues[0]
         self._input_queue_to_join = input_queues[1]
         self._output_exchange = output_exchange
@@ -23,6 +26,7 @@ class MoviesJoiner(Monitorable):
         self._movies = {}
         self._all_movies_received_of_clients = set()
         self._should_reenqueue_eof_of_clients = set()
+        self.storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -52,6 +56,7 @@ class MoviesJoiner(Monitorable):
         self._movies[client_id] = self._movies.get(client_id, {})
         for movie in movies_batch.get_items():
             self._movies[client_id][movie.id] = movie.title
+            self.storage_adapter.append(MOVIES_FILE_KEY, movie.id, movie.title, secondary_file_key=client_id)
             
     def __handle_client_disconnected(self, client_disconnected):
         logging.debug(f"action: client_disconnected | result: success | client_id: {client_disconnected.client_id}")
@@ -174,6 +179,7 @@ class MoviesJoiner(Monitorable):
 
     def run(self):
         self.start_receiving_health_checks()
+        self._movies = self.storage_adapter.load_data(MOVIES_FILE_KEY)
         input_queues_and_callback_functions = [
             (self._input_queue_movies[0], self._input_queue_movies[1], self.__handle_movies_batch_packet),
             (self._input_queue_to_join[0], self._input_queue_to_join[1], self.__handle_batch_packet_to_join)

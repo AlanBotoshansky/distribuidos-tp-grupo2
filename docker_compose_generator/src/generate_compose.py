@@ -1,5 +1,6 @@
 COMPOSE_PROJECT_NAME = 'tp'
 NETWORK_NAME = 'testing_net'
+STORAGE_PATH = '/storage'
 
 def generate_service(name, image, container_name=None, environment=None, volumes=None, networks=None, depends_on=None):
     """
@@ -167,10 +168,12 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
                 f"INPUT_QUEUES={input_queues}",
                 f"OUTPUT_EXCHANGE={output_exchange}",
                 f"CLUSTER_SIZE={cluster_size}",
-                f"ID={i}"
+                f"ID={i}",
+                f"STORAGE_PATH={STORAGE_PATH}"
             ],
             volumes=[
-                f"./controllers/movies_joiner/config.ini:/config.ini"
+                "./controllers/movies_joiner/config.ini:/config.ini",
+                f"{service_name}_storage:{STORAGE_PATH}"
             ],
             networks=[
                 NETWORK_NAME
@@ -512,6 +515,20 @@ def generate_network_config():
         }
     }
 
+def generate_storage_volumes_config(config_params):
+    """Generate the storage volumes configuration for the docker-compose file"""
+    volumes = {}
+    
+    for i in range(1, config_params["movies_ratings_joiner"] + 1):
+        volume_name = f"movies_ratings_joiner_{i}_storage"
+        volumes[volume_name] = None
+    
+    for i in range(1, config_params["movies_credits_joiner"] + 1):
+        volume_name = f"movies_credits_joiner_{i}_storage"
+        volumes[volume_name] = None
+    
+    return volumes
+
 def generate_docker_compose(config_params):
     """
     Generate the complete docker-compose configuration based on provided parameters
@@ -525,7 +542,8 @@ def generate_docker_compose(config_params):
     docker_compose = {
         "name": COMPOSE_PROJECT_NAME,
         "services": {},
-        "networks": generate_network_config()
+        "networks": generate_network_config(),
+        "volumes": generate_storage_volumes_config(config_params)
     }
     
     docker_compose["services"]["data_cleaner"] = generate_data_cleaner()
