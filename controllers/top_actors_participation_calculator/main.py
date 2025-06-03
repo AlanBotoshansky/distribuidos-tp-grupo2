@@ -27,6 +27,7 @@ def initialize_config():
         config_params["top_n_actors_participation"] = int(os.getenv('TOP_N_ACTORS_PARTICIPATION'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
+        config_params["storage_path"] = os.getenv('STORAGE_PATH')
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -53,14 +54,15 @@ def main():
     top_n_actors_participation = config_params["top_n_actors_participation"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
+    storage_path = config_params["storage_path"]
     
     initialize_log(logging_level)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_actors_participation: {top_n_actors_participation} | input_queues: {input_queues} | output_exchange: {output_exchange}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_actors_participation: {top_n_actors_participation} | input_queues: {input_queues} | output_exchange: {output_exchange} | storage_path: {storage_path}")
 
-    top_actors_participation_calculator = TopActorsParticipationCalculator(top_n_actors_participation, input_queues, output_exchange)
+    top_actors_participation_calculator = TopActorsParticipationCalculator(top_n_actors_participation, input_queues, output_exchange, storage_path)
     top_actors_participation_calculator.run()
 
 if __name__ == "__main__":

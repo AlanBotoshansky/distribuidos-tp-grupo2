@@ -432,17 +432,20 @@ def generate_movies_credits_joiner_cluster(cluster_size):
     
 def generate_top_actors_participation_calculator():
     """Generate the top actors participation calculator service configuration"""
+    service_name = "top_actors_participation_calculator"
     return generate_service(
-        name="top_actors_participation_calculator",
+        name=service_name,
         image="top_actors_participation_calculator",
         environment=[
             "PYTHONUNBUFFERED=1",
             "TOP_N_ACTORS_PARTICIPATION=10",
             "INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]",
-            "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000"
+            "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000",
+            f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
-            "./controllers/top_actors_participation_calculator/config.ini:/config.ini"
+            "./controllers/top_actors_participation_calculator/config.ini:/config.ini",
+            f"{service_name}_storage:{STORAGE_PATH}"
         ],
         networks=[
             NETWORK_NAME
@@ -536,6 +539,8 @@ def generate_storage_volumes_config(config_params):
     volumes["top_investor_countries_calculator_storage"] = None
     
     volumes["most_least_rated_movies_calculator_storage"] = None
+    
+    volumes["top_actors_participation_calculator_storage"] = None
     
     return volumes
 

@@ -6,14 +6,18 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.actor_participation import ActorParticipation
 from common.monitorable import Monitorable
+from storage_adapter.storage_adapter import StorageAdapter
+
+ACTORS_PARTICIPATION_FILE_KEY = "actors_participation"
 
 class TopActorsParticipationCalculator(Monitorable):
-    def __init__(self, top_n_actors_participation, input_queues, output_exchange):
+    def __init__(self, top_n_actors_participation, input_queues, output_exchange, storage_path):
         self._top_n_actors_participation = top_n_actors_participation
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
         self._actors_participation = {}
+        self._storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -31,6 +35,14 @@ class TopActorsParticipationCalculator(Monitorable):
         """
         self._middleware.stop()
         self.stop_receiving_health_checks()
+        
+    def __load_state_from_storage(self):
+        """
+        Load persisted state from storage
+        """
+        actors_participation = self._storage_adapter.load_data(ACTORS_PARTICIPATION_FILE_KEY)
+        if actors_participation:
+            self._actors_participation = actors_participation
     
     def __update_actors_participation(self, movies_credits_batch):
         client_id = movies_credits_batch.client_id
@@ -38,6 +50,7 @@ class TopActorsParticipationCalculator(Monitorable):
         for movie_credit in movies_credits_batch.get_items():
             for actor in movie_credit.cast:
                 self._actors_participation[client_id][actor] = self._actors_participation[client_id].get(actor, 0) + 1
+        self._storage_adapter.update(ACTORS_PARTICIPATION_FILE_KEY, self._actors_participation[client_id], secondary_file_key=client_id)
     
     def __get_top_actors_participations(self, client_id):
         sorted_actors_participations = sorted(self._actors_participation[client_id].items(), key=lambda x: x[1], reverse=True)
@@ -47,6 +60,7 @@ class TopActorsParticipationCalculator(Monitorable):
     def __clean_client_state(self, client_id):
         if client_id in self._actors_participation:
             self._actors_participation.pop(client_id)
+            self._storage_adapter.delete(ACTORS_PARTICIPATION_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -71,6 +85,7 @@ class TopActorsParticipationCalculator(Monitorable):
 
     def run(self):
         self.start_receiving_health_checks()
+        self.__load_state_from_storage()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,

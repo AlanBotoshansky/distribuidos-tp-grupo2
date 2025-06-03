@@ -74,7 +74,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
     def __clean_client_state(self, client_id):
         if client_id in self._movie_ratings:
             self._movie_ratings.pop(client_id)
-        self._storage_adapter.delete(MOVIE_RATINGS_FILE_KEY, secondary_file_key=client_id)
+            self._storage_adapter.delete(MOVIE_RATINGS_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
