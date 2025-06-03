@@ -6,14 +6,18 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.investor_country import InvestorCountry
 from common.monitorable import Monitorable
+from storage_adapter.storage_adapter import StorageAdapter
+
+INVESTMENT_BY_COUNTRY_FILE_KEY = "investment_by_country"
 
 class TopInvestorCountriesCalculator(Monitorable):
-    def __init__(self, top_n_investor_countries, input_queues, output_exchange):
+    def __init__(self, top_n_investor_countries, input_queues, output_exchange, storage_path):
         self._top_n_investor_countries = top_n_investor_countries
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
         self._investment_by_country = {}
+        self._storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -31,6 +35,14 @@ class TopInvestorCountriesCalculator(Monitorable):
         """
         self._middleware.stop()
         self.stop_receiving_health_checks()
+
+    def __load_state_from_storage(self):
+        """
+        Load persisted state from storage
+        """
+        investment_by_country = self._storage_adapter.load_data(INVESTMENT_BY_COUNTRY_FILE_KEY, value_type=int)
+        if investment_by_country:
+            self._investment_by_country = investment_by_country
     
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id
@@ -38,6 +50,7 @@ class TopInvestorCountriesCalculator(Monitorable):
         for movie in movies_batch.get_items():
             for country in movie.production_countries:
                 self._investment_by_country[client_id][country] = self._investment_by_country[client_id].get(country, 0) + movie.budget
+        self._storage_adapter.update(INVESTMENT_BY_COUNTRY_FILE_KEY, self._investment_by_country[client_id], secondary_file_key=client_id)
     
     def __get_top_investor_countries(self, client_id):
         sorted_investments = sorted(self._investment_by_country[client_id].items(), key=lambda x: x[1], reverse=True)
@@ -47,6 +60,7 @@ class TopInvestorCountriesCalculator(Monitorable):
     def __clean_client_state(self, client_id):
         if client_id in self._investment_by_country:
             self._investment_by_country.pop(client_id)
+            self._storage_adapter.delete(INVESTMENT_BY_COUNTRY_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -71,6 +85,7 @@ class TopInvestorCountriesCalculator(Monitorable):
 
     def run(self):
         self.start_receiving_health_checks()
+        self.__load_state_from_storage()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,

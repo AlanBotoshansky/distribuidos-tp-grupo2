@@ -66,7 +66,7 @@ class StorageAdapter:
         except Exception as e:
             logging.error(f"action: update_data_in_storage | result: fail | error: {e} | path: {file_path}")
     
-    def __load_data_from_file(self, file_path):
+    def __load_data_from_file(self, file_path, value_type=str):
         data = {}
         data_set = set()
         with open(file_path, 'rb') as f:
@@ -82,7 +82,7 @@ class StorageAdapter:
                     decoded_data = data_bytes.decode('utf-8')
                     if KEY_VALUE_SEPARATOR in decoded_data:
                         key, value = decoded_data.split(KEY_VALUE_SEPARATOR, 1)
-                        data[key] = value
+                        data[key] = value_type(value)
                     else:
                         data_set.add(decoded_data)
                 else:
@@ -90,15 +90,15 @@ class StorageAdapter:
         logging.debug(f"action: load_data_from_storage | result: success | path: {file_path}")
         return data_set if not data and data_set else data
             
-    def load_data(self, file_key):
+    def load_data(self, file_key, value_type=str):
         data = {}
         with os.scandir(self.storage_path) as files:
             for f in files:
                 if f.name.startswith(file_key):
                     file_path = os.path.join(self.storage_path, f.name)
                     if f.name == file_key:
-                        data = self.__load_data_from_file(file_path)
+                        data = self.__load_data_from_file(file_path, value_type)
                     else:
                         secondary_file_key = f.name[len(file_key):]
-                        data[secondary_file_key] = self.__load_data_from_file(file_path)
+                        data[secondary_file_key] = self.__load_data_from_file(file_path, value_type)
         return data if data else None

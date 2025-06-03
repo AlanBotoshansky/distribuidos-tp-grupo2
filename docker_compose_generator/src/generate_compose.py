@@ -320,17 +320,20 @@ def generate_movies_filter_by_one_country_cluster(cluster_size):
     
 def generate_top_investor_countries_calculator():
     """Generate the movies top investor countries calculator service configuration"""
+    service_name = "top_investor_countries_calculator"
     return generate_service(
-        name="top_investor_countries_calculator",
+        name=service_name,
         image="top_investor_countries_calculator",
         environment=[
             "PYTHONUNBUFFERED=1",
             "TOP_N_INVESTOR_COUNTRIES=5",
             "INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]",
-            "OUTPUT_EXCHANGE=top_investor_countries"
+            "OUTPUT_EXCHANGE=top_investor_countries",
+            f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
-            "./controllers/top_investor_countries_calculator/config.ini:/config.ini"
+            "./controllers/top_investor_countries_calculator/config.ini:/config.ini",
+            f"{service_name}_storage:{STORAGE_PATH}"
         ],
         networks=[
             NETWORK_NAME
@@ -526,6 +529,8 @@ def generate_storage_volumes_config(config_params):
     for i in range(1, config_params["movies_credits_joiner"] + 1):
         volume_name = f"movies_credits_joiner_{i}_storage"
         volumes[volume_name] = None
+        
+    volumes["top_investor_countries_calculator_storage"] = None
     
     return volumes
 
