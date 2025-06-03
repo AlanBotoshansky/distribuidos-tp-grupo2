@@ -464,16 +464,19 @@ def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size):
     
 def generate_avg_rate_revenue_budget_calculator():
     """Generate the average rate revenue budget calculator service configuration"""
+    service_name = "avg_rate_revenue_budget_calculator"
     return generate_service(
-        name="avg_rate_revenue_budget_calculator",
+        name=service_name,
         image="avg_rate_revenue_budget_calculator",
         environment=[
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]",
-            "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment"
+            "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment",
+            f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
-            "./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini"
+            "./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini",
+            f"{service_name}_storage:{STORAGE_PATH}"
         ],
         networks=[
             NETWORK_NAME
@@ -541,6 +544,8 @@ def generate_storage_volumes_config(config_params):
     volumes["most_least_rated_movies_calculator_storage"] = None
     
     volumes["top_actors_participation_calculator_storage"] = None
+    
+    volumes["avg_rate_revenue_budget_calculator_storage"] = None
     
     return volumes
 

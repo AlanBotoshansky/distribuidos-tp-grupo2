@@ -308,8 +308,10 @@ services:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]
     - OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment
+    - STORAGE_PATH=/storage
     volumes:
     - ./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini
+    - avg_rate_revenue_budget_calculator_storage:/storage
     networks:
     - testing_net
   health_guard_1:
@@ -353,3 +355,4 @@ volumes:
   top_investor_countries_calculator_storage: null
   most_least_rated_movies_calculator_storage: null
   top_actors_participation_calculator_storage: null
+  avg_rate_revenue_budget_calculator_storage: null

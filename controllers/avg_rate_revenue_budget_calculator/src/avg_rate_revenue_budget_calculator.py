@@ -4,15 +4,20 @@ from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
+from messages.analyzed_movie import Sentiment
 from messages.avg_rate_revenue_budget import AvgRateRevenueBudget
 from common.monitorable import Monitorable
+from storage_adapter.storage_adapter import StorageAdapter
+
+REVENUE_BUDGET_BY_SENTIMENT_FILE_KEY = "revenue_budget_by_sentiment"
 
 class AvgRateRevenueBudgetCalculator(Monitorable):
-    def __init__(self, input_queues, output_exchange):
+    def __init__(self, input_queues, output_exchange, storage_path):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
         self._revenue_budget_by_sentiment = {}
+        self._storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -30,29 +35,39 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
         """
         self._middleware.stop()
         self.stop_receiving_health_checks()
+        
+    def __load_state_from_storage(self):
+        """
+        Load persisted state from storage
+        """
+        revenue_budget_by_sentiment = self._storage_adapter.load_data(REVENUE_BUDGET_BY_SENTIMENT_FILE_KEY)
+        if revenue_budget_by_sentiment:
+            self._revenue_budget_by_sentiment = revenue_budget_by_sentiment
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
         client_id = analyzed_movies_batch.client_id
         self._revenue_budget_by_sentiment[client_id] = self._revenue_budget_by_sentiment.get(client_id, {})
         for analyzed_movie in analyzed_movies_batch.get_items():
-            revenue, budget, sentiment = analyzed_movie.revenue, analyzed_movie.budget, analyzed_movie.sentiment
+            revenue, budget, sentiment_value = analyzed_movie.revenue, analyzed_movie.budget, analyzed_movie.sentiment.value
             if revenue == 0 or budget == 0:
                 continue
-            revenue_sum, budget_sum = self._revenue_budget_by_sentiment[client_id].get(sentiment, (0, 0))
+            revenue_sum, budget_sum = self._revenue_budget_by_sentiment[client_id].get(sentiment_value, (0, 0))
             revenue_sum += revenue
             budget_sum += budget
-            self._revenue_budget_by_sentiment[client_id][sentiment] = (revenue_sum, budget_sum)
+            self._revenue_budget_by_sentiment[client_id][sentiment_value] = (revenue_sum, budget_sum)
+        self._storage_adapter.update(REVENUE_BUDGET_BY_SENTIMENT_FILE_KEY, self._revenue_budget_by_sentiment[client_id], secondary_file_key=client_id)
     
     def __get_avgs_rate_revenue_budget_by_sentiment(self, client_id):
         avgs_rate_revenue_budget = []
-        for sentiment, (revenue, budget) in self._revenue_budget_by_sentiment[client_id].items():
-            avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, sentiment, revenue/budget)
+        for sentiment_value, (revenue, budget) in self._revenue_budget_by_sentiment[client_id].items():
+            avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, Sentiment(sentiment_value), revenue/budget)
             avgs_rate_revenue_budget.append(avg_rate_revenue_budget)
         return avgs_rate_revenue_budget
     
     def __clean_client_state(self, client_id):
         if client_id in self._revenue_budget_by_sentiment:
             self._revenue_budget_by_sentiment.pop(client_id)
+            self._storage_adapter.delete(REVENUE_BUDGET_BY_SENTIMENT_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -77,6 +92,7 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
 
     def run(self):
         self.start_receiving_health_checks()
+        self.__load_state_from_storage()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
