@@ -40,7 +40,7 @@ class TopInvestorCountriesCalculator(Monitorable):
         """
         Load persisted state from storage
         """
-        investment_by_country = self._storage_adapter.load_data(INVESTMENT_BY_COUNTRY_FILE_KEY, value_type=int)
+        investment_by_country = self._storage_adapter.load_data(INVESTMENT_BY_COUNTRY_FILE_KEY)
         if investment_by_country:
             self._investment_by_country = investment_by_country
     

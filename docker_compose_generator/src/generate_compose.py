@@ -393,16 +393,19 @@ def generate_movies_ratings_joiner_cluster(cluster_size):
     
 def generate_most_least_rated_movies_calculator():
     """Generate the most and least rated movies calculator service configuration"""
+    service_name = "most_least_rated_movies_calculator"
     return generate_service(
-        name="most_least_rated_movies_calculator",
+        name=service_name,
         image="most_least_rated_movies_calculator",
         environment=[
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]",
-            "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000"
+            "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000",
+            f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
-            "./controllers/most_least_rated_movies_calculator/config.ini:/config.ini"
+            "./controllers/most_least_rated_movies_calculator/config.ini:/config.ini",
+            f"{service_name}_storage:{STORAGE_PATH}"
         ],
         networks=[
             NETWORK_NAME
@@ -531,6 +534,8 @@ def generate_storage_volumes_config(config_params):
         volumes[volume_name] = None
         
     volumes["top_investor_countries_calculator_storage"] = None
+    
+    volumes["most_least_rated_movies_calculator_storage"] = None
     
     return volumes
 

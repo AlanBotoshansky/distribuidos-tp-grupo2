@@ -7,13 +7,17 @@ from messages.packet_type import PacketType
 from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
 from common.monitorable import Monitorable
+from storage_adapter.storage_adapter import StorageAdapter
+
+MOVIE_RATINGS_FILE_KEY = "movie_ratings"
 
 class MostLeastRatedMoviesCalculator(Monitorable):
-    def __init__(self, input_queues, output_exchange):
+    def __init__(self, input_queues, output_exchange, storage_path):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
         self._movie_ratings = {}
+        self._storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -31,6 +35,14 @@ class MostLeastRatedMoviesCalculator(Monitorable):
         """
         self._middleware.stop()
         self.stop_receiving_health_checks()
+        
+    def __load_state_from_storage(self):
+        """
+        Load persisted state from storage
+        """
+        movie_ratings = self._storage_adapter.load_data(MOVIE_RATINGS_FILE_KEY)
+        if movie_ratings:     
+            self._movie_ratings = movie_ratings
     
     def __update_movie_ratings(self, movie_ratings_batch):
         client_id = movie_ratings_batch.client_id
@@ -40,6 +52,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
             sum_ratings += movie_rating.rating
             cant_ratings += 1
             self._movie_ratings[client_id][movie_rating.id] = (title, sum_ratings, cant_ratings)
+        self._storage_adapter.update(MOVIE_RATINGS_FILE_KEY, self._movie_ratings[client_id], secondary_file_key=client_id)
     
     def __get_most_least_rated_movies(self, client_id):
         max_id = None
@@ -61,6 +74,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
     def __clean_client_state(self, client_id):
         if client_id in self._movie_ratings:
             self._movie_ratings.pop(client_id)
+        self._storage_adapter.delete(MOVIE_RATINGS_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -85,6 +99,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
 
     def run(self):
         self.start_receiving_health_checks()
+        self.__load_state_from_storage()
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_packet) for input_queue in self._input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions,
                                       output_exchange=self._output_exchange,
