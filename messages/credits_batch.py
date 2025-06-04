@@ -8,8 +8,8 @@ from messages.serialization import (
 )
 
 class CreditsBatch(BaseMessage):
-    def __init__(self, client_id, credits):
-        super().__init__(client_id)
+    def __init__(self, client_id, credits, message_id=None):
+        super().__init__(client_id, message_id)
         self.credits = credits
 
     def __repr__(self):
@@ -26,6 +26,7 @@ class CreditsBatch(BaseMessage):
     
     def serialize(self):
         payload = b""
+        payload += encode_string(self.message_id)
         payload += encode_string(self.client_id)
         for credit in self.credits:
             payload += credit.serialize()
@@ -35,6 +36,7 @@ class CreditsBatch(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
+        message_id, offset = cls.deserialize_string(payload, offset)
         client_id, offset = cls.deserialize_string(payload, offset)
         
         credits = []
@@ -44,7 +46,7 @@ class CreditsBatch(BaseMessage):
             
             credits.append(Credit(movie_id, cast))
 
-        return cls(client_id, credits)
+        return cls(client_id, credits, message_id)
     
     @classmethod
     def from_csv_lines(cls, client_id, lines: list[str]):

@@ -1,10 +1,13 @@
+import uuid
+
 from messages.serialization import (
     LENGTH_FIELD,
     decode_string, decode_strings_list, decode_date, decode_int, decode_float, decode_strings_set
 )
 
 class BaseMessage:
-    def __init__(self, client_id):
+    def __init__(self, client_id, message_id=None):
+        self.message_id = message_id or str(uuid.uuid4())
         self.client_id = client_id
     
     @classmethod

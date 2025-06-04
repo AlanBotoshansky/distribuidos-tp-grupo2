@@ -23,8 +23,8 @@ class FieldType(IntEnum):
     REVENUE = 8
 
 class MoviesBatch(BaseMessage):
-    def __init__(self, client_id, movies):
-        super().__init__(client_id)
+    def __init__(self, client_id, movies, message_id=None):
+        super().__init__(client_id, message_id)
         self.movies = movies
 
     def __repr__(self):
@@ -52,6 +52,7 @@ class MoviesBatch(BaseMessage):
         }
 
         payload = b""
+        payload += encode_string(self.message_id)
         payload += encode_string(self.client_id)
         
         payload += len(self.movies).to_bytes(LENGTH_MOVIES_AMOUNT, 'big')
@@ -98,6 +99,7 @@ class MoviesBatch(BaseMessage):
 
         offset = 0
         
+        message_id, offset = cls.deserialize_string(payload, offset)
         client_id, offset = cls.deserialize_string(payload, offset)
 
         amount_movies = int.from_bytes(payload[offset:offset+LENGTH_MOVIES_AMOUNT], 'big')
@@ -115,7 +117,7 @@ class MoviesBatch(BaseMessage):
                 field_value, offset = cls.deserialize_field(payload, offset, decoder)
                 setattr(movie, field, field_value)
 
-        return cls(client_id, movies)
+        return cls(client_id, movies, message_id)
     
     @classmethod
     def from_csv_lines(cls, client_id, lines: list[str]):

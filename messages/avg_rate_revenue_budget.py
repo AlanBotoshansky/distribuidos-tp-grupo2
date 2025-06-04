@@ -7,8 +7,8 @@ from messages.serialization import (
 )
 
 class AvgRateRevenueBudget(BaseMessage):
-    def __init__(self, client_id, sentiment, avg):
-        super().__init__(client_id)
+    def __init__(self, client_id, sentiment, avg, message_id=None):
+        super().__init__(client_id, message_id)
         self.sentiment = sentiment
         self.avg = avg
         
@@ -20,6 +20,7 @@ class AvgRateRevenueBudget(BaseMessage):
 
     def serialize(self):
         payload = b""
+        payload += encode_string(self.message_id)
         payload += encode_string(self.client_id)
         payload += encode_num(self.sentiment.value)
         payload += encode_num(self.avg)
@@ -30,11 +31,12 @@ class AvgRateRevenueBudget(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
+        message_id, offset = cls.deserialize_string(payload, offset)
         client_id, offset = cls.deserialize_string(payload, offset)
         sentiment, offset = cls.deserialize_int(payload, offset)
         avg, offset = cls.deserialize_float(payload, offset)
 
-        return cls(client_id, Sentiment(sentiment), avg)
+        return cls(client_id, Sentiment(sentiment), avg, message_id)
     
     def to_csv_lines(self):
         return [f"{self.sentiment},{self.avg}"]

@@ -7,8 +7,8 @@ from messages.serialization import (
 )
 
 class MovieCreditsBatch(BaseMessage):
-    def __init__(self, client_id, movie_credits):
-        super().__init__(client_id)
+    def __init__(self, client_id, movie_credits, message_id=None):
+        super().__init__(client_id, message_id)
         self.movie_credits = movie_credits
 
     def __repr__(self):
@@ -25,6 +25,7 @@ class MovieCreditsBatch(BaseMessage):
     
     def serialize(self):
         payload = b""
+        payload += encode_string(self.message_id)
         payload += encode_string(self.client_id)
         for movie_credit in self.movie_credits:
             payload += movie_credit.serialize()
@@ -34,6 +35,7 @@ class MovieCreditsBatch(BaseMessage):
     def deserialize(cls, payload: bytes):
         offset = 0
         
+        message_id, offset = cls.deserialize_string(payload, offset)
         client_id, offset = cls.deserialize_string(payload, offset)
         
         movie_credits = []
@@ -44,4 +46,4 @@ class MovieCreditsBatch(BaseMessage):
             
             movie_credits.append(MovieCredit(id, title, cast))
 
-        return cls(client_id, movie_credits)
+        return cls(client_id, movie_credits, message_id)
