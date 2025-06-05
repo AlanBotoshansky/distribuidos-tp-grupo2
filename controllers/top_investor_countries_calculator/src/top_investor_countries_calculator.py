@@ -43,6 +43,7 @@ class TopInvestorCountriesCalculator(Monitorable):
         investment_by_country = self._storage_adapter.load_data(INVESTMENT_BY_COUNTRY_FILE_KEY)
         if investment_by_country:
             self._investment_by_country = investment_by_country
+            logging.debug(f"action: load_state_from_storage | result: success | investment_by_country: {self._investment_by_country}")
     
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id

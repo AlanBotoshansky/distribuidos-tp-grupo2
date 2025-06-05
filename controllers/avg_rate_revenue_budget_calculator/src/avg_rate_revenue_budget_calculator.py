@@ -43,6 +43,7 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
         revenue_budget_by_sentiment = self._storage_adapter.load_data(REVENUE_BUDGET_BY_SENTIMENT_FILE_KEY)
         if revenue_budget_by_sentiment:
             self._revenue_budget_by_sentiment = revenue_budget_by_sentiment
+            logging.debug(f"action: load_state_from_storage | result: success | revenue_budget_by_sentiment: {self._revenue_budget_by_sentiment}")
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
         client_id = analyzed_movies_batch.client_id

@@ -43,6 +43,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
         movie_ratings = self._storage_adapter.load_data(MOVIE_RATINGS_FILE_KEY)
         if movie_ratings:     
             self._movie_ratings = movie_ratings
+            logging.debug(f"action: load_state_from_storage | result: success | movie_ratings: {self._movie_ratings}")
     
     def __update_movie_ratings(self, movie_ratings_batch):
         client_id = movie_ratings_batch.client_id

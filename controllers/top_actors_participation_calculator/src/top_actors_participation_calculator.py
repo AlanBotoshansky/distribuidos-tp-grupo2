@@ -43,6 +43,7 @@ class TopActorsParticipationCalculator(Monitorable):
         actors_participation = self._storage_adapter.load_data(ACTORS_PARTICIPATION_FILE_KEY)
         if actors_participation:
             self._actors_participation = actors_participation
+            logging.debug(f"action: load_state_from_storage | result: success | actors_participation: {self._actors_participation}")
     
     def __update_actors_participation(self, movies_credits_batch):
         client_id = movies_credits_batch.client_id

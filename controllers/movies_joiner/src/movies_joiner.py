@@ -57,17 +57,20 @@ class MoviesJoiner(Monitorable):
         """
         Load persisted state from storage
         """
-        movies = self._storage_adapter.load_data(MOVIES_FILE_KEY)
+        movies = self._storage_adapter.load_key_values(MOVIES_FILE_KEY)
         if movies:
             self._movies = movies
+            logging.debug(f"action: load_state_from_storage | result: success | movies: {self._movies}")
             
         all_movies_received_of_clients = self._storage_adapter.load_data(ALL_MOVIES_RECEIVED_FILE_KEY)
         if all_movies_received_of_clients:
             self._all_movies_received_of_clients = all_movies_received_of_clients
+            logging.debug(f"action: load_state_from_storage | result: success | all_movies_received_of_clients: {self._all_movies_received_of_clients}")
             
         should_reenqueue_eof_of_clients = self._storage_adapter.load_data(SHOULD_REENQUEUE_EOF_FILE_KEY)
         if should_reenqueue_eof_of_clients:
             self._should_reenqueue_eof_of_clients = should_reenqueue_eof_of_clients
+            logging.debug(f"action: load_state_from_storage | result: success | should_reenqueue_eof_of_clients: {self._should_reenqueue_eof_of_clients}")
     
     def __store_movies(self, movies_batch):
         client_id = movies_batch.client_id
@@ -91,7 +94,7 @@ class MoviesJoiner(Monitorable):
             eof = msg
             if eof.client_id not in self._all_movies_received_of_clients:
                 self._all_movies_received_of_clients.add(eof.client_id)
-                self._storage_adapter.append(ALL_MOVIES_RECEIVED_FILE_KEY, eof.client_id)
+                self._storage_adapter.update(ALL_MOVIES_RECEIVED_FILE_KEY, self._all_movies_received_of_clients)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
             client_disconnected = msg
             self.__handle_client_disconnected(client_disconnected)
@@ -132,7 +135,7 @@ class MoviesJoiner(Monitorable):
             self._middleware.reenqueue_message(PacketSerde.serialize(batch_to_reenqueue), queue=self._input_queue_to_join[0])
             if client_id not in self._should_reenqueue_eof_of_clients:
                 self._should_reenqueue_eof_of_clients.add(client_id)
-                self._storage_adapter.append(SHOULD_REENQUEUE_EOF_FILE_KEY, client_id)
+                self._storage_adapter.update(SHOULD_REENQUEUE_EOF_FILE_KEY, self._should_reenqueue_eof_of_clients)
             
         if len(joined_batch.get_items()) > 0:
             self._middleware.send_message(PacketSerde.serialize(joined_batch))
