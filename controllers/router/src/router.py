@@ -38,11 +38,11 @@ class Router(Monitorable):
     def __hash_id(self, id, dest_nodes_amount):
         return (id % dest_nodes_amount) + 1
     
-    def __generate_deterministic_uuid(message_id, destination_id):
+    def __generate_deterministic_uuid(self, message_id, destination_id):
         """
         Generate a deterministic UUID based on the message ID and destination ID.
         """
-        return uuid.uuid5(message_id, str(destination_id))
+        return str(uuid.uuid5(uuid.UUID(message_id), str(destination_id)))
     
     def __route_batch(self, batch, get_hash_id, batch_class, log_action_prefix):
         """
