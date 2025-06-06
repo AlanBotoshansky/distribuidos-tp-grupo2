@@ -121,7 +121,7 @@ class MoviesJoiner(Monitorable):
             self.__reenqueue_batch_to_join(batch)
             return
         
-        joined_batch = joined_batch_class(client_id, [])
+        joined_batch = joined_batch_class(client_id, [], message_id=batch.message_id)
         
         for item in batch.get_items():
             movie_id = get_movie_id(item)
@@ -179,7 +179,7 @@ class MoviesJoiner(Monitorable):
         eof.add_seen_id(self._id)
         if len(eof.seen_ids) == self._cluster_size:
             if min(eof.seen_ids) == self._id:
-                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
                 logging.info("action: sent_eof | result: success")
             self.__clean_client_state(client_id)
         else:
