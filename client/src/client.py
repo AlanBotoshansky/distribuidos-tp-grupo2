@@ -2,6 +2,7 @@ import logging
 import socket
 import signal
 import multiprocessing as mp
+import time
 import communication.communication as communication
 from utils.utils import close_socket
 from src.results_receiver import ResultsReceiver
@@ -13,6 +14,9 @@ QUERY_RESULTS_HEADERS = [
     "actor,participation",
     "sentiment,avg_rate_revenue_budget",
 ]
+
+WAIT_TIME_RESTART = 5
+ATTEMPTS_TO_CONNECT_TO_SERVER = 5
 
 class Client:
     
@@ -54,10 +58,21 @@ class Client:
         close_socket(self._data_socket, "data_socket")
         
     def __connect_to_server(self, server_ip, server_port):
-        logging.info(f"Connecting to server at {server_ip}:{server_port}")
+        attempts = 0
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((server_ip, server_port))
-        return sock
+        while True:
+            try:
+                logging.info(f"Connecting to server at {server_ip}:{server_port} | attempt: {attempts + 1}")
+                sock.connect((server_ip, server_port))
+                logging.info("action: connect_to_data_socket | result: success")
+                return sock
+            except OSError as e:
+                attempts += 1
+                if attempts == ATTEMPTS_TO_CONNECT_TO_SERVER:
+                    logging.error(f"action: connect_to_data_socket | result: fail | error: {e} | attempts: {ATTEMPTS_TO_CONNECT_TO_SERVER}")
+                    return
+                retry_wait_time = 2 ** attempts
+                time.sleep(retry_wait_time)
     
     def __receive_id(self):
         logging.info("action: receive_id | result: in_progress")
@@ -79,28 +94,23 @@ class Client:
             communication.send_lines(self._data_socket, batch)
 
     def __send_data(self):
-        try:
-            self.__send_file(self._movies_path, batch_max_size=self._movies_batch_max_size)
-            communication.send_message(self._data_socket, communication.EOF)
-            logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
-            self.__send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
-            communication.send_message(self._data_socket, communication.EOF)
-            logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
-            self.__send_file(self._credits_path, batch_max_size=self._credits_batch_max_size)
-            communication.send_message(self._data_socket, communication.EOF)
-            logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
-        except OSError as e:
-            logging.error(f"Error while sending data: {e}")
+        self.__send_file(self._movies_path, batch_max_size=self._movies_batch_max_size)
+        communication.send_message(self._data_socket, communication.EOF)
+        logging.info(f"action: finished_sending_file | result: success | file: {self._movies_path}")
+        self.__send_file(self._ratings_path, batch_max_size=self._ratings_batch_max_size)
+        communication.send_message(self._data_socket, communication.EOF)
+        logging.info(f"action: finished_sending_file | result: success | file: {self._ratings_path}")
+        self.__send_file(self._credits_path, batch_max_size=self._credits_batch_max_size)
+        communication.send_message(self._data_socket, communication.EOF)
+        logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
     
     def __receive_results(self, id):
         results_receiver = ResultsReceiver(id, self._results_dir, self._server_ip_results, self._server_port_results)
         results_receiver.run()
         
-    def run(self):
-        try:
-            self._data_socket = self.__connect_to_server(self._server_ip_data, self._server_port_data)
-        except OSError as e:
-            logging.error(f"Error while connecting to data socket: {e}")
+    def run(self):        
+        self._data_socket = self.__connect_to_server(self._server_ip_data, self._server_port_data)
+        if not self._data_socket:
             return
         
         try:
@@ -113,7 +123,16 @@ class Client:
         self._results_receiver = mp.Process(target=self.__receive_results, args=(id,))
         self._results_receiver.start()
         
-        self.__send_data()
+        try:
+            self.__send_data()
+        except OSError as e:
+            logging.error(f"Error while sending data: {e}")
+            if not self._shutdown_requested:  
+                self._results_receiver.terminate()
+                self._results_receiver.join()
+                time.sleep(WAIT_TIME_RESTART)
+                self.run()
+            
         if not self._shutdown_requested:
             close_socket(self._data_socket, "data_socket")
         

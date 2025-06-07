@@ -216,17 +216,20 @@ def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, fie
 
 def generate_data_cleaner():
     """Generate data_cleaner service configuration"""
+    service_name = "data_cleaner"
     return generate_service(
-        name="data_cleaner",
+        name=service_name,
         image="data_cleaner",
         environment=[
             "PYTHONUNBUFFERED=1",
             "MOVIES_EXCHANGE=movies",
             "RATINGS_EXCHANGE=ratings",
-            "CREDITS_EXCHANGE=credits"
+            "CREDITS_EXCHANGE=credits",
+            f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
-            "./controllers/data_cleaner/config.ini:/config.ini"
+            "./controllers/data_cleaner/config.ini:/config.ini",
+            f"{service_name}_storage:{STORAGE_PATH}"
         ],
         networks=[
             NETWORK_NAME
@@ -546,6 +549,8 @@ def generate_storage_volumes_config(config_params):
     volumes["top_actors_participation_calculator_storage"] = None
     
     volumes["avg_rate_revenue_budget_calculator_storage"] = None
+    
+    volumes["data_cleaner_storage"] = None
     
     return volumes
 

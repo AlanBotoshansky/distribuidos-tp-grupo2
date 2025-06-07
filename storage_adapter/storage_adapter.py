@@ -95,7 +95,7 @@ class StorageAdapter:
         temp_file_path = self.__get_temp_file_path()
         try:
             with open(temp_file_path, 'wb') as temp_f:
-                temp_f.write(repr(data).encode('utf-8'))
+                temp_f.write(str(data).encode('utf-8'))
                 temp_f.flush()
             os.replace(temp_file_path, file_path)
             logging.debug(f"action: update_data_in_storage | result: success | file_path: {file_path}")

@@ -7,5 +7,6 @@ COPY /messages /messages
 COPY /middleware /middleware
 COPY /common /common
 COPY /utils /utils
+COPY /storage_adapter /storage_adapter
 WORKDIR /
 ENTRYPOINT ["python3", "main.py"]

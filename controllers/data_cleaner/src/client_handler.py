@@ -11,15 +11,19 @@ from messages.client_disconnected import ClientDisconnected
 from src.client_state import ClientState
 
 CLIENT_DISCONNECT_TIMEOUT = 1
+CONNECTED_CLIENTS_FILE_KEY = "connected_clients"
 
 class ClientHandler:
-    def __init__(self, client_id, client_sock, messages_queue, receiver_pool_semaphore):
+    def __init__(self, client_id, client_sock, messages_queue, receiver_pool_semaphore, connected_clients, connected_clients_update_lock, storage_adapter):
         self._client_id = client_id
         self._client_sock = client_sock
         self._messages_queue = messages_queue
         self._receiver_pool_semaphore = receiver_pool_semaphore
         self._client_state = ClientState()
         self._shutdown_requested = False
+        self._connected_clients = connected_clients
+        self._connected_clients_update_lock = connected_clients_update_lock
+        self._storage_adapter = storage_adapter
       
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -51,6 +55,9 @@ class ClientHandler:
                 break
         if not self._shutdown_requested:
             close_socket(self._client_sock, f"client_{self._client_id}_socket")
+        with self._connected_clients_update_lock:
+            self._connected_clients.pop(self._client_id)
+            self._storage_adapter.update(CONNECTED_CLIENTS_FILE_KEY, self._connected_clients)
         self._receiver_pool_semaphore.release()
         
     def __handle_client_message(self, msg):
