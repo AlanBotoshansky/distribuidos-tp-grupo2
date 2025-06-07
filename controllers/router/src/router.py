@@ -1,5 +1,6 @@
 import signal
 import logging
+import uuid
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -37,6 +38,12 @@ class Router(Monitorable):
     def __hash_id(self, id, dest_nodes_amount):
         return (id % dest_nodes_amount) + 1
     
+    def __generate_deterministic_uuid(self, message_id, destination_id):
+        """
+        Generate a deterministic UUID based on the message ID and destination ID.
+        """
+        return str(uuid.uuid5(uuid.UUID(message_id), str(destination_id)))
+    
     def __route_batch(self, batch, get_hash_id, batch_class, log_action_prefix):
         """
         Generic method to route any type of batch to its destination nodes
@@ -51,7 +58,8 @@ class Router(Monitorable):
             batches = {}
             for item in batch.get_items():
                 destination_id = self.__hash_id(get_hash_id(item), dest_nodes_amount)
-                destination_batch = batches.get(destination_id, batch_class(batch.client_id, []))
+                new_message_id = self.__generate_deterministic_uuid(batch.message_id, destination_id)
+                destination_batch = batches.get(destination_id, batch_class(batch.client_id, [], message_id=new_message_id))
                 destination_batch.add_item(item)
                 batches[destination_id] = destination_batch
         
@@ -84,12 +92,20 @@ class Router(Monitorable):
             log_action_prefix="credits_batch"
         )
         
+    def __send_eof_to_all_destination_nodes(self, received_eof):
+        for output_exchange_prefix, dest_nodes_amount in self._output_exchange_prefixes_and_dest_nodes_amount:
+            for i in range(1, dest_nodes_amount + 1):
+                output_exchange = f"{output_exchange_prefix}_{i}"
+                new_message_id = self.__generate_deterministic_uuid(received_eof.message_id, i)
+                self._middleware.send_message(PacketSerde.serialize(EOF(received_eof.client_id, message_id=new_message_id)), exchange=output_exchange)
+                logging.info(f"action: sent_eof | result: success | destination_id: {i}")
+        
     def __send_message_to_all_destination_nodes(self, msg):
         for output_exchange_prefix, dest_nodes_amount in self._output_exchange_prefixes_and_dest_nodes_amount:
             for i in range(1, dest_nodes_amount + 1):
                 output_exchange = f"{output_exchange_prefix}_{i}"
                 self._middleware.send_message(PacketSerde.serialize(msg), exchange=output_exchange)
-                logging.info(f"action: sent_eof | result: success | destination_id: {i}")
+                logging.info(f"action: sent_msg | result: success | destination_id: {i}")
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -106,7 +122,7 @@ class Router(Monitorable):
             eof = msg
             eof.add_seen_id(self._id)
             if len(eof.seen_ids) == self._cluster_size:
-                self.__send_message_to_all_destination_nodes(EOF(eof.client_id))
+                self.__send_eof_to_all_destination_nodes(eof)
             else:
                 self._middleware.reenqueue_message(PacketSerde.serialize(eof))
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:

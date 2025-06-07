@@ -2,10 +2,8 @@ import signal
 import logging
 from middleware.middleware import Middleware
 from messages.eof import EOF
-from messages.ratings_batch import RatingsBatch
 from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
-from messages.credits_batch import CreditsBatch
 from messages.movie_credit import MovieCredit
 from messages.movie_credits_batch import MovieCreditsBatch
 from messages.packet_serde import PacketSerde
@@ -101,7 +99,13 @@ class MoviesJoiner(Monitorable):
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
 
-    def __join_batch(self, batch, get_movie_id, create_joined_item, joined_batch_class, received_batch_class, log_action_prefix):
+    def __reenqueue_batch_to_join(self, batch):
+        self._middleware.reenqueue_message(PacketSerde.serialize(batch), queue=self._input_queue_to_join[0])
+        if batch.client_id not in self._should_reenqueue_eof_of_clients:
+            self._should_reenqueue_eof_of_clients.add(batch.client_id)
+            self._storage_adapter.update(SHOULD_REENQUEUE_EOF_FILE_KEY, self._should_reenqueue_eof_of_clients)
+
+    def __join_batch(self, batch, get_movie_id, create_joined_item, joined_batch_class, log_action_prefix):
         """
         Generic method to join any type of batch with movie data
         
@@ -110,15 +114,14 @@ class MoviesJoiner(Monitorable):
             get_movie_id: Function to extract the movie ID from an item
             create_joined_item: Function to create a new item with the joined data
             joined_batch_class: Class to instantiate the new batch with joined items
-            received_batch_class: Class to instantiate the received batch
             log_action_prefix: Prefix for the log message
         """
         client_id = batch.client_id
         if client_id not in self._movies:
+            self.__reenqueue_batch_to_join(batch)
             return
         
-        joined_batch = joined_batch_class(client_id, [])
-        batch_to_reenqueue = received_batch_class(client_id, [])
+        joined_batch = joined_batch_class(client_id, [], message_id=batch.message_id)
         
         for item in batch.get_items():
             movie_id = get_movie_id(item)
@@ -129,13 +132,8 @@ class MoviesJoiner(Monitorable):
             else:
                 if client_id in self._all_movies_received_of_clients:
                     continue
-                batch_to_reenqueue.add_item(item)
-                
-        if len(batch_to_reenqueue.get_items()) > 0:
-            self._middleware.reenqueue_message(PacketSerde.serialize(batch_to_reenqueue), queue=self._input_queue_to_join[0])
-            if client_id not in self._should_reenqueue_eof_of_clients:
-                self._should_reenqueue_eof_of_clients.add(client_id)
-                self._storage_adapter.update(SHOULD_REENQUEUE_EOF_FILE_KEY, self._should_reenqueue_eof_of_clients)
+                self.__reenqueue_batch_to_join(batch)
+                return
             
         if len(joined_batch.get_items()) > 0:
             self._middleware.send_message(PacketSerde.serialize(joined_batch))
@@ -147,7 +145,6 @@ class MoviesJoiner(Monitorable):
             get_movie_id=lambda rating: rating.movie_id,
             create_joined_item=lambda movie_id, movie_title, rating: MovieRating(movie_id, movie_title, rating.rating),
             joined_batch_class=MovieRatingsBatch,
-            received_batch_class=RatingsBatch,
             log_action_prefix="ratings_batch"
         )
             
@@ -157,7 +154,6 @@ class MoviesJoiner(Monitorable):
             get_movie_id=lambda credit: credit.movie_id,
             create_joined_item=lambda movie_id, movie_title, credit: MovieCredit(movie_id, movie_title, credit.cast),
             joined_batch_class=MovieCreditsBatch,
-            received_batch_class=CreditsBatch,
             log_action_prefix="credits_batch"
         )
         
@@ -183,7 +179,7 @@ class MoviesJoiner(Monitorable):
         eof.add_seen_id(self._id)
         if len(eof.seen_ids) == self._cluster_size:
             if min(eof.seen_ids) == self._id:
-                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+                self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
                 logging.info("action: sent_eof | result: success")
             self.__clean_client_state(client_id)
         else:

@@ -1,5 +1,6 @@
 import signal
 import logging
+import uuid
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -8,7 +9,9 @@ from messages.investor_country import InvestorCountry
 from common.monitorable import Monitorable
 from storage_adapter.storage_adapter import StorageAdapter
 
-INVESTMENT_BY_COUNTRY_FILE_KEY = "investment_by_country"
+STATE_FILE_KEY = "state"
+INVESTMENT_BY_COUNTRY = "investment_by_country"
+PROCESSED_MESSAGE_IDS= "processed_message_ids"
 
 class TopInvestorCountriesCalculator(Monitorable):
     def __init__(self, top_n_investor_countries, input_queues, output_exchange, storage_path):
@@ -16,7 +19,7 @@ class TopInvestorCountriesCalculator(Monitorable):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
         self._middleware = None
-        self._investment_by_country = {}
+        self._state = {}
         self._storage_adapter = StorageAdapter(storage_path)
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
@@ -40,28 +43,37 @@ class TopInvestorCountriesCalculator(Monitorable):
         """
         Load persisted state from storage
         """
-        investment_by_country = self._storage_adapter.load_data(INVESTMENT_BY_COUNTRY_FILE_KEY)
-        if investment_by_country:
-            self._investment_by_country = investment_by_country
-            logging.debug(f"action: load_state_from_storage | result: success | investment_by_country: {self._investment_by_country}")
+        state = self._storage_adapter.load_data(STATE_FILE_KEY)
+        if state:
+            self._state = state
+            logging.debug(f"action: load_state_from_storage | result: success | state: {self._state}")
+            
+    def __generate_deterministic_uuid(self, message_id, country):
+        """
+        Generate a deterministic UUID based on the message ID and country.
+        """
+        return str(uuid.uuid5(uuid.UUID(message_id), country))
     
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id
-        self._investment_by_country[client_id] = self._investment_by_country.get(client_id, {})
+        self._state[client_id] = self._state.get(client_id, {INVESTMENT_BY_COUNTRY: {}, PROCESSED_MESSAGE_IDS: set()})
+        if movies_batch.message_id in self._state[client_id][PROCESSED_MESSAGE_IDS]:
+            return
         for movie in movies_batch.get_items():
             for country in movie.production_countries:
-                self._investment_by_country[client_id][country] = self._investment_by_country[client_id].get(country, 0) + movie.budget
-        self._storage_adapter.update(INVESTMENT_BY_COUNTRY_FILE_KEY, self._investment_by_country[client_id], secondary_file_key=client_id)
+                self._state[client_id][INVESTMENT_BY_COUNTRY][country] = self._state[client_id][INVESTMENT_BY_COUNTRY].get(country, 0) + movie.budget
+        self._state[client_id][PROCESSED_MESSAGE_IDS].add(movies_batch.message_id)
+        self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
     def __get_top_investor_countries(self, client_id):
-        sorted_investments = sorted(self._investment_by_country[client_id].items(), key=lambda x: x[1], reverse=True)
+        sorted_investments = sorted(self._state[client_id][INVESTMENT_BY_COUNTRY].items(), key=lambda x: x[1], reverse=True)
         top_investor_countries = sorted_investments[:self._top_n_investor_countries]
         return top_investor_countries
     
     def __clean_client_state(self, client_id):
-        if client_id in self._investment_by_country:
-            self._investment_by_country.pop(client_id)
-            self._storage_adapter.delete(INVESTMENT_BY_COUNTRY_FILE_KEY, secondary_file_key=client_id)
+        if client_id in self._state:
+            self._state.pop(client_id)
+            self._storage_adapter.delete(STATE_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
         msg = PacketSerde.deserialize(packet)
@@ -71,9 +83,10 @@ class TopInvestorCountriesCalculator(Monitorable):
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             for country, investment in self.__get_top_investor_countries(eof.client_id):
-                investor_country = InvestorCountry(eof.client_id, country, investment)
+                new_message_id = self.__generate_deterministic_uuid(eof.message_id, country)
+                investor_country = InvestorCountry(eof.client_id, country, investment, message_id=new_message_id)
                 self._middleware.send_message(PacketSerde.serialize(investor_country))
-            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
