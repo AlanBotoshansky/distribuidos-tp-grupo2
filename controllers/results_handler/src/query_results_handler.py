@@ -10,6 +10,7 @@ class QueryResultsHandler:
         self._results_queue = results_queue
         input_queues_and_callback_functions = [(input_queue[0], input_queue[1], self.__handle_result_packet) for input_queue in input_queues]
         self._middleware = Middleware(input_queues_and_callback_functions=input_queues_and_callback_functions)
+        self._processed_message_ids = set()
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -22,10 +23,13 @@ class QueryResultsHandler:
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
             return
+        if msg.message_id in self._processed_message_ids:
+            return
         result = [self._num_query]
         query_result = msg.to_csv_lines()
         result.extend(query_result)
         self._results_queue.put((msg.client_id, result))
+        self._processed_message_ids.add(msg.message_id)
         
     def run(self):
         self._middleware.handle_messages()
