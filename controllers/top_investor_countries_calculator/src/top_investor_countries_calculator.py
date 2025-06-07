@@ -50,6 +50,8 @@ class TopInvestorCountriesCalculator(Monitorable):
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id
         self._state[client_id] = self._state.get(client_id, {INVESTMENT_BY_COUNTRY: {}, PROCESSED_MESSAGE_IDS: set()})
+        if movies_batch.message_id in self._state[client_id][PROCESSED_MESSAGE_IDS]:
+            return
         for movie in movies_batch.get_items():
             for country in movie.production_countries:
                 self._state[client_id][INVESTMENT_BY_COUNTRY][country] = self._state[client_id][INVESTMENT_BY_COUNTRY].get(country, 0) + movie.budget
