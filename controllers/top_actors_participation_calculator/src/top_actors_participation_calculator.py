@@ -1,5 +1,6 @@
 import signal
 import logging
+import uuid
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -46,6 +47,12 @@ class TopActorsParticipationCalculator(Monitorable):
         if state:
             self._state = state
             logging.debug(f"action: load_state_from_storage | result: success | state: {self._state}")
+            
+    def __generate_deterministic_uuid(self, message_id, actor):
+        """
+        Generate a deterministic UUID based on the message ID and actor.
+        """
+        return str(uuid.uuid5(uuid.UUID(message_id), actor))
     
     def __update_actors_participation(self, movies_credits_batch):
         client_id = movies_credits_batch.client_id
@@ -76,9 +83,10 @@ class TopActorsParticipationCalculator(Monitorable):
         elif msg.packet_type() == PacketType.EOF:  
             eof = msg
             for actor, participation in self.__get_top_actors_participations(eof.client_id):
-                actor_participation = ActorParticipation(eof.client_id, actor, participation)
+                new_message_id = self.__generate_deterministic_uuid(eof.message_id, actor)
+                actor_participation = ActorParticipation(eof.client_id, actor, participation, message_id=new_message_id)
                 self._middleware.send_message(PacketSerde.serialize(actor_participation))
-            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
