@@ -1,5 +1,6 @@
 import signal
 import logging
+import uuid
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -46,6 +47,12 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
         if state:
             self._state = state
             logging.debug(f"action: load_state_from_storage | result: success | state: {self._state}")
+            
+    def __generate_deterministic_uuid(self, message_id, sentiment_value):
+        """
+        Generate a deterministic UUID based on the message ID and sentiment_value.
+        """
+        return str(uuid.uuid5(uuid.UUID(message_id), str(sentiment_value)))
     
     def __update_revenues_budgets(self, analyzed_movies_batch):
         client_id = analyzed_movies_batch.client_id
@@ -63,10 +70,12 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
         self._state[client_id][PROCESSED_MESSAGE_IDS].add(analyzed_movies_batch.message_id) 
         self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
-    def __get_avgs_rate_revenue_budget_by_sentiment(self, client_id):
+    def __get_avgs_rate_revenue_budget_by_sentiment(self, eof):
+        client_id = eof.client_id
         avgs_rate_revenue_budget = []
         for sentiment_value, (revenue, budget) in self._state[client_id][REVENUE_BUDGET_BY_SENTIMENT].items():
-            avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, Sentiment(sentiment_value), revenue/budget)
+            new_message_id = self.__generate_deterministic_uuid(eof.message_id, sentiment_value)
+            avg_rate_revenue_budget = AvgRateRevenueBudget(client_id, Sentiment(sentiment_value), revenue/budget, message_id=new_message_id)
             avgs_rate_revenue_budget.append(avg_rate_revenue_budget)
         return avgs_rate_revenue_budget
     
@@ -82,7 +91,7 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
             self.__update_revenues_budgets(analyzed_movies_batch)
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
-            for avg_rate_revenue_budget in self.__get_avgs_rate_revenue_budget_by_sentiment(eof.client_id):
+            for avg_rate_revenue_budget in self.__get_avgs_rate_revenue_budget_by_sentiment(eof):
                 self._middleware.send_message(PacketSerde.serialize(avg_rate_revenue_budget))
                 logging.debug(f"action: sent_avg_rate_revenue_budget | result: success | avg_rate_revenue_budget: {avg_rate_revenue_budget}")
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
