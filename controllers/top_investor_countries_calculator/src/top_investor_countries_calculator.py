@@ -1,5 +1,6 @@
 import signal
 import logging
+import uuid
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -46,6 +47,12 @@ class TopInvestorCountriesCalculator(Monitorable):
         if state:
             self._state = state
             logging.debug(f"action: load_state_from_storage | result: success | state: {self._state}")
+            
+    def __generate_deterministic_uuid(self, message_id, country):
+        """
+        Generate a deterministic UUID based on the message ID and country.
+        """
+        return str(uuid.uuid5(uuid.UUID(message_id), country))
     
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id
@@ -76,9 +83,10 @@ class TopInvestorCountriesCalculator(Monitorable):
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             for country, investment in self.__get_top_investor_countries(eof.client_id):
-                investor_country = InvestorCountry(eof.client_id, country, investment)
+                new_message_id = self.__generate_deterministic_uuid(eof.message_id, country)
+                investor_country = InvestorCountry(eof.client_id, country, investment, message_id=new_message_id)
                 self._middleware.send_message(PacketSerde.serialize(investor_country))
-            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
