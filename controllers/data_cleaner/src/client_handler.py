@@ -45,7 +45,8 @@ class ClientHandler:
                 self.__handle_client_message(msg)
             except (ConnectionError, socket.timeout):
                 logging.info(f"action: client_disconnected | client_id: {self._client_id}")
-                self._messages_queue.put(ClientDisconnected(self._client_id))
+                if not self._client_state.has_finished_sending():
+                    self._messages_queue.put(ClientDisconnected(self._client_id))
                 break
             except OSError:
                 logging.info(f"action: terminating_client_handler | client_id: {self._client_id}")

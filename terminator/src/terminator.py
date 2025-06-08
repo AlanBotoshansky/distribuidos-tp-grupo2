@@ -105,20 +105,20 @@ class Terminator:
         
         return killed_count
     
-    def kill_specific_services(self, service_names):
+    def kill_specific_containers(self, container_names):
         """
         Kill containers for specific services
         
         Args:
-            service_names: Set of service names to kill
+            container_names: Set of container names to kill
         """
         protected_containers, killable_containers = self._get_protected_and_killable_containers()
         
-        print(f"Looking for services: {', '.join(service_names)}")
+        print(f"Looking for services: {', '.join(container_names)}")
         if protected_containers:
             print(f"Protected containers (won't be killed): {', '.join([c.name for c in protected_containers])}")
         
-        specific_containers = [c for c in killable_containers if c.name in service_names]
+        specific_containers = [c for c in killable_containers if c.name in container_names]
         killed_count = self.kill_containers(specific_containers)
         
         print(f"\nSummary: {killed_count} containers killed")
@@ -149,17 +149,27 @@ class Terminator:
         
         print(f"\nSummary: {killed_count} containers killed")
     
-    def kill_all(self):
+    def kill_all(self, excluded_containers=set()):
         """
         Kill all containers belonging to the project
+        
+        Args:
+            excluded_containers: Set of container names to exclude from killing (optional)
         """
         protected_containers, killable_containers = self._get_protected_and_killable_containers()
+        
+        if excluded_containers:
+            original_count = len(killable_containers)
+            killable_containers = [c for c in killable_containers if c.name not in excluded_containers]
+            excluded_count = original_count - len(killable_containers)
+            if excluded_count > 0:
+                print(f"Excluded containers: {', '.join(sorted(excluded_containers))}")
         
         if protected_containers:
             print(f"Protected containers (won't be killed): {', '.join([c.name for c in protected_containers])}")
         
         if not killable_containers:
-            print("No killable containers available - all containers are protected")
+            print("No killable containers available - all containers are protected or excluded")
             return
         
         print(f"Killing {len(killable_containers)} containers from project '{self.project_name}':")

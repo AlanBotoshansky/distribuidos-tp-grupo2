@@ -12,9 +12,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py --mode specific --arg "movies_filter_released_between_2000_and_2009_1, movies_filter_by_one_production_country_1"
-  python main.py --mode count --arg 3
-  python main.py --mode all
+  python3 main.py --mode specific --arg "movies_filter_released_between_2000_and_2009_1, movies_filter_by_one_production_country_1"
+  python3 main.py --mode count --arg 3
+  python3 main.py --mode all
+  python3 main.py --mode all --arg "data_cleaner,results_handler"  # exclude specific containers
         """
     )
     
@@ -22,12 +23,12 @@ Examples:
         '--mode',
         choices=['specific', 'count', 'all'],
         required=True,
-        help='Termination mode: specific (kill specific services), count (kill N containers), all (kill all containers)'
+        help='Termination mode: specific (kill specific containers), count (kill N containers), all (kill all containers)'
     )
     
     parser.add_argument(
         '--arg',
-        help='Argument for the mode: comma-separated service names for "specific", number for "count", not needed for "all"'
+        help='Argument for the mode: comma-separated container names for "specific", number for "count", comma-separated excluded containers for "all" (optional)'
     )
     
     parser.add_argument(
@@ -39,7 +40,7 @@ Examples:
     args = parser.parse_args()
     
     if args.mode == 'specific' and not args.arg:
-        parser.error("--arg is required for 'specific' mode (comma-separated service names)")
+        parser.error("--arg is required for 'specific' mode (comma-separated container names)")
     elif args.mode == 'count' and not args.arg:
         parser.error("--arg is required for 'count' mode (number of containers to kill)")
     elif args.mode == 'count' and args.arg:
@@ -52,13 +53,16 @@ Examples:
     
     try:
         if args.mode == 'specific':
-            service_names = {name.strip() for name in args.arg.split(',') if name.strip()}
-            terminator.kill_specific_services(service_names)
+            container_names = {name.strip() for name in args.arg.split(',') if name.strip()}
+            terminator.kill_specific_containers(container_names)
         elif args.mode == 'count':
             count = int(args.arg)
             terminator.kill_count(count)
         elif args.mode == 'all':
-            terminator.kill_all()
+            excluded_container_names = set()
+            if args.arg:
+                excluded_container_names = {name.strip() for name in args.arg.split(',') if name.strip()}
+            terminator.kill_all(excluded_container_names)
     except docker.errors.APIError as e:
         print(f"Error: {e}")
 
