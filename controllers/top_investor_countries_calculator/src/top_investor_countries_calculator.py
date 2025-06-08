@@ -66,6 +66,8 @@ class TopInvestorCountriesCalculator(Monitorable):
         self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
     def __get_top_investor_countries(self, client_id):
+        if client_id not in self._state:
+            return []
         sorted_investments = sorted(self._state[client_id][INVESTMENT_BY_COUNTRY].items(), key=lambda x: x[1], reverse=True)
         top_investor_countries = sorted_investments[:self._top_n_investor_countries]
         return top_investor_countries

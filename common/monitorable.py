@@ -6,7 +6,7 @@ class Monitorable:
     def start_receiving_health_checks(self):
         self._health_checks_receiver_process = mp.Process(target=self.__receive_health_checks)
         self._health_checks_receiver_process.start()
-        logging.info("action: health_checks_receiver_started | result: success")
+        logging.info("action: health_checks_receiver_process_started | result: success")
         
     def __receive_health_checks(self):
         health_checks_receiver = HealthChecksReceiver()

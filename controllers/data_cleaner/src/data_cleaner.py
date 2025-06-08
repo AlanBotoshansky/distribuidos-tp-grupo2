@@ -69,7 +69,7 @@ class DataCleaner(Monitorable):
             for client_id in previous_connected_clients:
                 self._messages_queue.put(ClientDisconnected(client_id))
                 logging.info(f"action: notify_disconnection_of_previous_client | client_id: {client_id}")
-        self._storage_adapter.delete(CONNECTED_CLIENTS_FILE_KEY)
+            self._storage_adapter.delete(CONNECTED_CLIENTS_FILE_KEY)
 
     def __accept_new_connection(self):
         """

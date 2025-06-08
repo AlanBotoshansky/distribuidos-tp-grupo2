@@ -1,10 +1,10 @@
 import logging
-import socket
 import signal
-import communication.communication as communication
-from utils.utils import close_socket
-from datetime import datetime
 import os
+from datetime import datetime
+from src.utils import connect_to_server
+from utils.utils import close_socket
+import communication.communication as communication
 
 QUERY_RESULTS_HEADERS = [
     "id,title,genres",
@@ -14,14 +14,18 @@ QUERY_RESULTS_HEADERS = [
     "sentiment,avg_rate_revenue_budget",
 ]
 
+RESULTS_SOCKET_NAME = "results_socket"
+
 class ResultsReceiver:
-    def __init__(self, id, results_dir, server_ip_results, server_port_results):
+    def __init__(self, id, results_dir, server_ip_results, server_port_results, server_results_disconnected, ready_to_receive_results):
         self._id = id
         self._results_dir = results_dir
         self._server_ip_results = server_ip_results
         self._server_port_results = server_port_results
         self._result_files = {}
         self._shutdown_requested = False
+        self._server_results_disconnected = server_results_disconnected
+        self._ready_to_receive_results = ready_to_receive_results
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -34,14 +38,8 @@ class ResultsReceiver:
             self.__shutdown()
             
     def __shutdown(self):
-        close_socket(self._results_socket, "results_socket")
+        close_socket(self._results_socket, RESULTS_SOCKET_NAME)
         self.__close_all_result_files()
-        
-    def __connect_to_server(self, server_ip, server_port):
-        logging.info(f"Connecting to server at {server_ip}:{server_port}")
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((server_ip, server_port))
-        return sock
     
     def __send_id(self):
         logging.info("action: send_id | result: in_progress")
@@ -76,6 +74,7 @@ class ResultsReceiver:
         amount_queries_resolved = 0
         
         start_time = datetime.now()
+        self._ready_to_receive_results.set()
         while True:
             try:
                 message = communication.receive_lines_message(self._results_socket)
@@ -93,22 +92,22 @@ class ResultsReceiver:
                         logging.info(f"Received result from query {num_query}: {result}")
             except OSError as e:
                 logging.error(f"Error while receiving results: {e}")
+                if not self._shutdown_requested:
+                    self._server_results_disconnected.set()
                 return
             
     def run(self):
-        try:
-            self._results_socket = self.__connect_to_server(self._server_ip_results, self._server_port_results)
-        except OSError as e:
-            logging.error(f"Error while connecting to results socket: {e}")
+        self._results_socket = connect_to_server(self._server_ip_results, self._server_port_results, RESULTS_SOCKET_NAME)
+        if not self._results_socket:
             return
         
         try:
             self.__send_id()
         except OSError as e:
             logging.error(f"action: send_id | result: fail | error: {e}")
-            close_socket(self._results_socket, "results_socket")
+            close_socket(self._results_socket, RESULTS_SOCKET_NAME)
             return
         
         self.__receive_results()
         if not self._shutdown_requested:
-            close_socket(self._results_socket, "results_socket")
+            close_socket(self._results_socket, RESULTS_SOCKET_NAME)

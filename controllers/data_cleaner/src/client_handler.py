@@ -43,11 +43,8 @@ class ClientHandler:
             try:
                 msg = communication.receive_message(self._client_sock)
                 self.__handle_client_message(msg)
-            except ConnectionError:
-                logging.info(f"action: client_disconnected_after_finished_sending | client_id: {self._client_id}")
-                break
-            except socket.timeout:
-                logging.info(f"action: client_disconnected_while_sending | client_id: {self._client_id}")
+            except (ConnectionError, socket.timeout):
+                logging.info(f"action: client_disconnected | client_id: {self._client_id}")
                 self._messages_queue.put(ClientDisconnected(self._client_id))
                 break
             except OSError:

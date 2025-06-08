@@ -27,7 +27,7 @@ def read_bytes(socket, length):
     while total_bytes_received < length:
         bytesReceived = socket.recv(length - total_bytes_received)
         if not bytesReceived:
-            raise ConnectionError("Client disconnected")
+            raise ConnectionError("Socket connection closed")
         data.extend(bytesReceived)
         total_bytes_received += len(bytesReceived)
     return data

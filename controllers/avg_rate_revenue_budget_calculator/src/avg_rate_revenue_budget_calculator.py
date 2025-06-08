@@ -72,6 +72,8 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
     
     def __get_avgs_rate_revenue_budget_by_sentiment(self, eof):
         client_id = eof.client_id
+        if client_id not in self._state:
+            return []
         avgs_rate_revenue_budget = []
         for sentiment_value, (revenue, budget) in self._state[client_id][REVENUE_BUDGET_BY_SENTIMENT].items():
             new_message_id = self.__generate_deterministic_uuid(eof.message_id, sentiment_value)
@@ -94,7 +96,7 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
             for avg_rate_revenue_budget in self.__get_avgs_rate_revenue_budget_by_sentiment(eof):
                 self._middleware.send_message(PacketSerde.serialize(avg_rate_revenue_budget))
                 logging.debug(f"action: sent_avg_rate_revenue_budget | result: success | avg_rate_revenue_budget: {avg_rate_revenue_budget}")
-            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id)))
+            self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:

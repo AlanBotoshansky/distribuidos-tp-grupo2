@@ -69,6 +69,8 @@ class MostLeastRatedMoviesCalculator(Monitorable):
     
     def __get_most_least_rated_movies(self, eof):
         client_id = eof.client_id
+        if client_id not in self._state:
+            return
         max_id = None
         max_avg_rating = float('-inf')
         min_id = None
@@ -99,8 +101,9 @@ class MostLeastRatedMoviesCalculator(Monitorable):
         elif msg.packet_type() == PacketType.EOF:
             eof = msg
             movie_ratings_batch_result = self.__get_most_least_rated_movies(eof)
-            self._middleware.send_message(PacketSerde.serialize(movie_ratings_batch_result))
-            logging.debug(f"action: sent_movie_ratings_batch | result: success | movie_ratings_batch: {movie_ratings_batch_result}")
+            if movie_ratings_batch_result:
+                self._middleware.send_message(PacketSerde.serialize(movie_ratings_batch_result))
+                logging.debug(f"action: sent_movie_ratings_batch | result: success | movie_ratings_batch: {movie_ratings_batch_result}")
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
             self.__clean_client_state(eof.client_id)

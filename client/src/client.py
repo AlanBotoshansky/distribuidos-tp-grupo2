@@ -1,11 +1,11 @@
 import logging
-import socket
 import signal
 import multiprocessing as mp
 import time
-import communication.communication as communication
-from utils.utils import close_socket
 from src.results_receiver import ResultsReceiver
+from src.utils import connect_to_server
+from utils.utils import close_socket
+import communication.communication as communication
 
 QUERY_RESULTS_HEADERS = [
     "id,title,genres",
@@ -16,7 +16,11 @@ QUERY_RESULTS_HEADERS = [
 ]
 
 WAIT_TIME_RESTART = 5
-ATTEMPTS_TO_CONNECT_TO_SERVER = 5
+
+DATA_SOCKET_NAME = "data_socket"
+
+class ServerResultsDisconnectedError(Exception):
+    pass
 
 class Client:
     
@@ -37,6 +41,9 @@ class Client:
         self._results_receiver = None
         self._id = None
         self._shutdown_requested = False
+        self._manager = mp.Manager()
+        self._server_results_disconnected = self._manager.Event()
+        self._ready_to_receive_results = self._manager.Event()
         
         signal.signal(signal.SIGTERM, self.__handle_signal)
 
@@ -55,24 +62,7 @@ class Client:
             self._results_receiver.join()
             logging.info("action: results_receiver_terminated | result: success")
         
-        close_socket(self._data_socket, "data_socket")
-        
-    def __connect_to_server(self, server_ip, server_port):
-        attempts = 0
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        while True:
-            try:
-                logging.info(f"Connecting to server at {server_ip}:{server_port} | attempt: {attempts + 1}")
-                sock.connect((server_ip, server_port))
-                logging.info("action: connect_to_data_socket | result: success")
-                return sock
-            except OSError as e:
-                attempts += 1
-                if attempts == ATTEMPTS_TO_CONNECT_TO_SERVER:
-                    logging.error(f"action: connect_to_data_socket | result: fail | error: {e} | attempts: {ATTEMPTS_TO_CONNECT_TO_SERVER}")
-                    return
-                retry_wait_time = 2 ** attempts
-                time.sleep(retry_wait_time)
+        close_socket(self._data_socket, DATA_SOCKET_NAME)
     
     def __receive_id(self):
         logging.info("action: receive_id | result: in_progress")
@@ -88,6 +78,8 @@ class Client:
                 line = line.rstrip()
                 batch.append(line)
                 if len(batch) == batch_max_size:
+                    if self._server_results_disconnected.is_set():
+                        raise ServerResultsDisconnectedError
                     communication.send_lines(self._data_socket, batch)
                     batch = []
         if batch:
@@ -104,12 +96,12 @@ class Client:
         communication.send_message(self._data_socket, communication.EOF)
         logging.info(f"action: finished_sending_file | result: success | file: {self._credits_path}")
     
-    def __receive_results(self, id):
-        results_receiver = ResultsReceiver(id, self._results_dir, self._server_ip_results, self._server_port_results)
+    def __receive_results(self, id, results_dir, server_ip_results, server_port_results, server_results_disconnected, ready_to_receive_results):
+        results_receiver = ResultsReceiver(id, results_dir, server_ip_results, server_port_results, server_results_disconnected, ready_to_receive_results)
         results_receiver.run()
         
     def run(self):        
-        self._data_socket = self.__connect_to_server(self._server_ip_data, self._server_port_data)
+        self._data_socket = connect_to_server(self._server_ip_data, self._server_port_data, DATA_SOCKET_NAME)
         if not self._data_socket:
             return
         
@@ -117,12 +109,13 @@ class Client:
             id = self.__receive_id()
         except OSError as e:
             logging.error(f"action: receive_id | result: fail | error: {e}")
-            close_socket(self._data_socket, "data_socket")
+            close_socket(self._data_socket, DATA_SOCKET_NAME)
             return
     
-        self._results_receiver = mp.Process(target=self.__receive_results, args=(id,))
+        self._results_receiver = mp.Process(target=self.__receive_results, args=(id, self._results_dir, self._server_ip_results, self._server_port_results, self._server_results_disconnected, self._ready_to_receive_results))
         self._results_receiver.start()
         
+        self._ready_to_receive_results.wait()
         try:
             self.__send_data()
         except OSError as e:
@@ -132,8 +125,15 @@ class Client:
                 self._results_receiver.join()
                 time.sleep(WAIT_TIME_RESTART)
                 self.run()
+        except ServerResultsDisconnectedError:
+            logging.error("Server results disconnected while sending data")
             
         if not self._shutdown_requested:
-            close_socket(self._data_socket, "data_socket")
+            close_socket(self._data_socket, DATA_SOCKET_NAME)
         
         self._results_receiver.join()
+        if self._server_results_disconnected.is_set():
+            self._ready_to_receive_results.clear()
+            self._server_results_disconnected.clear()
+            time.sleep(WAIT_TIME_RESTART)
+            self.run()

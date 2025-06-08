@@ -1,7 +1,7 @@
 import docker
 import random
 
-DONT_KILL_CONTAINERS = ["rabbitmq", "results_handler", "client"]
+DONT_KILL_CONTAINERS = ["rabbitmq", "client"]
 
 class Terminator:
     def __init__(self, project_name):

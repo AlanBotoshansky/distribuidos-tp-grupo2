@@ -66,6 +66,8 @@ class TopActorsParticipationCalculator(Monitorable):
         self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
     def __get_top_actors_participations(self, client_id):
+        if client_id not in self._state:
+            return []
         sorted_actors_participations = sorted(self._state[client_id][ACTORS_PARTICIPATION].items(), key=lambda x: x[1], reverse=True)
         top_actors_participations = sorted_actors_participations[:self._top_n_actors_participation]
         return top_actors_participations
