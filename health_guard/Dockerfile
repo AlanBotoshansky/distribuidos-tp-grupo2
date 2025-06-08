@@ -4,4 +4,4 @@ COPY health_guard /
 COPY /common /common
 COPY /utils /utils
 WORKDIR /
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["sh", "-c", "sleep 5 && exec python3 main.py"]
