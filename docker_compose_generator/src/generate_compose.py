@@ -74,7 +74,7 @@ def generate_cluster(cluster_size, service_prefix, image, container_prefix=None,
     
     return services
 
-def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_values, output_fields_subset, input_queues, output_exchange):
+def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_values, output_fields_subset, input_queues, output_exchange, failure_probability):
     """
     Generic function to generate a cluster of filter services
     
@@ -86,6 +86,7 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
         output_fields_subset: Fields to include in output
         input_queues: Input queues configuration
         output_exchange: Output exchange name
+        failure_probability: Probability of service failure
         
     Returns:
         Dictionary mapping service names to their configurations
@@ -101,6 +102,7 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
             f"OUTPUT_FIELDS_SUBSET={output_fields_subset}",
             f"INPUT_QUEUES={input_queues}",
             f"OUTPUT_EXCHANGE={output_exchange}",
+            f"FAILURE_PROBABILITY={failure_probability}",
         ],
         volumes=[
             "./controllers/movies_filter/config.ini:/config.ini"
@@ -285,7 +287,7 @@ def generate_clients(n):
     
     return clients
 
-def generate_movies_filter_argentina_spain_cluster(cluster_size):
+def generate_movies_filter_argentina_spain_cluster(cluster_size, failure_probability):
     """Generate the movies filter services for Argentina and Spain filtering"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
@@ -294,10 +296,11 @@ def generate_movies_filter_argentina_spain_cluster(cluster_size):
         filter_values='["Argentina", "Spain"]',
         output_fields_subset='["id", "title", "genres", "release_date"]',
         input_queues='[("movies_q1", "movies")]',
-        output_exchange="movies_produced_in_argentina_and_spain"
+        output_exchange="movies_produced_in_argentina_and_spain",
+        failure_probability=failure_probability
     )
 
-def generate_movies_filter_date_2000_2009_cluster(cluster_size):
+def generate_movies_filter_date_2000_2009_cluster(cluster_size, failure_probability):
     """Generate the movies filter services for filtering by release date between 2000 and 2009"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
@@ -306,10 +309,11 @@ def generate_movies_filter_date_2000_2009_cluster(cluster_size):
         filter_values="(2000, 2009)",
         output_fields_subset='["id", "title", "genres"]',
         input_queues='[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]',
-        output_exchange="movies_produced_in_argentina_and_spain_released_between_2000_2009"
+        output_exchange="movies_produced_in_argentina_and_spain_released_between_2000_2009",
+        failure_probability=failure_probability
     )
 
-def generate_movies_filter_by_one_country_cluster(cluster_size):
+def generate_movies_filter_by_one_country_cluster(cluster_size, failure_probability):
     """Generate the movies filter services for one production country filtering"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
@@ -318,7 +322,8 @@ def generate_movies_filter_by_one_country_cluster(cluster_size):
         filter_values='1',
         output_fields_subset='["production_countries", "budget"]',
         input_queues='[("movies_q2", "movies")]',
-        output_exchange="movies_produced_by_one_country"
+        output_exchange="movies_produced_by_one_country",
+        failure_probability=failure_probability
     )
     
 def generate_top_investor_countries_calculator():
@@ -343,7 +348,7 @@ def generate_top_investor_countries_calculator():
         ]
     )
     
-def generate_movies_filter_argentina_cluster(cluster_size):
+def generate_movies_filter_argentina_cluster(cluster_size, failure_probability):
     """Generate the movies filter services for Argentina filtering"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
@@ -352,10 +357,11 @@ def generate_movies_filter_argentina_cluster(cluster_size):
         filter_values='["Argentina"]',
         output_fields_subset='["id", "title", "release_date"]',
         input_queues='[("movies_q3_q4", "movies")]',
-        output_exchange="movies_produced_in_argentina"
+        output_exchange="movies_produced_in_argentina",
+        failure_probability=failure_probability
     )
 
-def generate_movies_filter_date_after_2000_cluster(cluster_size):
+def generate_movies_filter_date_after_2000_cluster(cluster_size, failure_probability):
     """Generate the movies filter services for filtering by release date after 2000"""
     return generate_filter_cluster(
         cluster_size=cluster_size,
@@ -364,7 +370,8 @@ def generate_movies_filter_date_after_2000_cluster(cluster_size):
         filter_values="(2000,)",
         output_fields_subset='["id", "title"]',
         input_queues='[("movies_produced_in_argentina", "movies_produced_in_argentina")]',
-        output_exchange="movies_produced_in_argentina_released_after_2000"
+        output_exchange="movies_produced_in_argentina_released_after_2000",
+        failure_probability=failure_probability
     )
     
 def generate_movies_router_by_id_cluster(cluster_size, movies_ratings_joiner_amount, movies_credits_joiner_amount):
@@ -578,28 +585,33 @@ def generate_docker_compose(config_params):
 
     # Query 1
     movies_filter_argentina_spain_cluster = generate_movies_filter_argentina_spain_cluster(
-        config_params["movies_filter_produced_in_argentina_and_spain"]
+        config_params["movies_filter_produced_in_argentina_and_spain"],
+        config_params["failure_probabilities"]["movies_filter_produced_in_argentina_and_spain"]
     )
     docker_compose["services"].update(movies_filter_argentina_spain_cluster)
     movies_filter_date_2000_2009_cluster = generate_movies_filter_date_2000_2009_cluster(
-        config_params["movies_filter_released_between_2000_2009"]
+        config_params["movies_filter_released_between_2000_2009"],
+        config_params["failure_probabilities"]["movies_filter_released_between_2000_2009"]
     )
     docker_compose["services"].update(movies_filter_date_2000_2009_cluster)
     
     # Query 2
     movies_filter_by_one_country_cluster = generate_movies_filter_by_one_country_cluster(
-        config_params["movies_filter_by_one_production_country"]
+        config_params["movies_filter_by_one_production_country"],
+        config_params["failure_probabilities"]["movies_filter_by_one_production_country"]
     )
     docker_compose["services"].update(movies_filter_by_one_country_cluster)
     docker_compose["services"]["top_investor_countries_calculator"] = generate_top_investor_countries_calculator()
     
     # Queries 3 and 4
     movies_filter_argentina_cluster = generate_movies_filter_argentina_cluster(
-        config_params["movies_filter_produced_in_argentina"]
+        config_params["movies_filter_produced_in_argentina"],
+        config_params["failure_probabilities"]["movies_filter_produced_in_argentina"]
     )
     docker_compose["services"].update(movies_filter_argentina_cluster)
     movies_filter_date_after_2000_cluster = generate_movies_filter_date_after_2000_cluster(
-        config_params["movies_filter_released_after_2000"]
+        config_params["movies_filter_released_after_2000"],
+        config_params["failure_probabilities"]["movies_filter_released_after_2000"]
     )
     docker_compose["services"].update(movies_filter_date_after_2000_cluster)
     movies_router_by_id_cluster = generate_movies_router_by_id_cluster(

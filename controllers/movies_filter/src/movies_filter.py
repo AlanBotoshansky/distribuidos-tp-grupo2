@@ -6,17 +6,19 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from messages.movies_batch import MoviesBatch
 from common.monitorable import Monitorable
+from common.failure_simulation import fail_with_probability
 
 PRODUCTION_COUNTRIES_FIELD = 'production_countries'
 RELEASE_DATE_FIELD = 'release_date'
 
 class MoviesFilter(Monitorable):
-    def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange, cluster_size, id):
+    def __init__(self, filter_field, filter_values, output_fields_subset, input_queues, output_exchange, failure_probability, cluster_size, id):
         self._filter_field = filter_field
         self._filter_values = filter_values
         self._output_fields_subset = output_fields_subset
         self._input_queues = input_queues
         self._output_exchange = output_exchange
+        self._failure_probability = failure_probability
         self._cluster_size = cluster_size
         self._id = id
         self._middleware = None
@@ -82,6 +84,7 @@ class MoviesFilter(Monitorable):
             logging.debug(f"action: movies_batch_filtered | result: success | filtered_movies_batch: {filtered_movies_batch}")
     
     def __handle_packet(self, packet):
+        fail_with_probability(self._failure_probability, "before sending message")
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
@@ -100,6 +103,7 @@ class MoviesFilter(Monitorable):
             self._middleware.send_message(PacketSerde.serialize(client_disconnected))
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+        fail_with_probability(self._failure_probability, "after sending message")
 
     def run(self):
         self.start_receiving_health_checks()

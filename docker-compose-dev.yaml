@@ -73,6 +73,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres", "release_date"]
     - INPUT_QUEUES=[("movies_q1", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
@@ -89,6 +90,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "genres"]
     - INPUT_QUEUES=[("movies_produced_in_argentina_and_spain", "movies_produced_in_argentina_and_spain")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_and_spain_released_between_2000_2009
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
@@ -105,6 +107,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["production_countries", "budget"]
     - INPUT_QUEUES=[("movies_q2", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_by_one_country
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
@@ -135,6 +138,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title", "release_date"]
     - INPUT_QUEUES=[("movies_q3_q4", "movies")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
@@ -151,6 +155,7 @@ services:
     - OUTPUT_FIELDS_SUBSET=["id", "title"]
     - INPUT_QUEUES=[("movies_produced_in_argentina", "movies_produced_in_argentina")]
     - OUTPUT_EXCHANGE=movies_produced_in_argentina_released_after_2000
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:
