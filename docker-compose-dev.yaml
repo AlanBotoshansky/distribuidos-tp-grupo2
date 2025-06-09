@@ -302,6 +302,7 @@ services:
     - FIELD_TO_ANALYZE=overview
     - INPUT_QUEUES=[("movies_q5", "movies")]
     - OUTPUT_EXCHANGE=movies_sentiment_analyzed
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     volumes:

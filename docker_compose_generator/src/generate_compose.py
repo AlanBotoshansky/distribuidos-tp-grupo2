@@ -184,7 +184,7 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
     
     return services
 
-def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, field_to_analyze, input_queues, output_exchange):
+def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, field_to_analyze, input_queues, output_exchange, failure_probability):
     """
     Generic function to generate a cluster of sentiment analyzer services
     
@@ -194,6 +194,7 @@ def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, fie
         field_to_analyze: Field to analyze
         input_queues: Input queues configuration
         output_exchange: Output exchange name
+        failure_probability: Probability of service failure
         
     Returns:
         Dictionary mapping service names to their configurations
@@ -207,6 +208,7 @@ def generate_movies_sentiment_analyzer_cluster(cluster_size, service_prefix, fie
             f"FIELD_TO_ANALYZE={field_to_analyze}",
             f"INPUT_QUEUES={input_queues}",
             f"OUTPUT_EXCHANGE={output_exchange}",
+            f"FAILURE_PROBABILITY={failure_probability}",
         ],
         volumes=[
             "./controllers/movies_sentiment_analyzer/config.ini:/config.ini"
@@ -462,14 +464,15 @@ def generate_top_actors_participation_calculator():
         ]
     )
     
-def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size):
+def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size, failure_probability):
     """Generate the movies sentiment analyzer services for analyzing movies overview"""
     return generate_movies_sentiment_analyzer_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_sentiment_analyzer",
         field_to_analyze="overview",
         input_queues='[("movies_q5", "movies")]',
-        output_exchange="movies_sentiment_analyzed"
+        output_exchange="movies_sentiment_analyzed",
+        failure_probability=failure_probability
     )
     
 def generate_avg_rate_revenue_budget_calculator():
@@ -647,7 +650,8 @@ def generate_docker_compose(config_params):
 
     # Query 5
     movies_sentiment_analyzer_cluster = generate_movies_sentiment_analyzer_by_overview_cluster(
-        config_params["movies_sentiment_analyzer"]
+        config_params["movies_sentiment_analyzer"],
+        config_params["failure_probabilities"]["movies_sentiment_analyzer"]
     )
     docker_compose["services"].update(movies_sentiment_analyzer_cluster)
     docker_compose["services"]["avg_rate_revenue_budget_calculator"] = generate_avg_rate_revenue_budget_calculator()
