@@ -10,16 +10,18 @@ from messages.packet_serde import PacketSerde
 from messages.packet_type import PacketType
 from common.monitorable import Monitorable
 from storage_adapter.storage_adapter import StorageAdapter
+from common.failure_simulation import fail_with_probability
 
 MOVIES_FILE_KEY = "movies"
 ALL_MOVIES_RECEIVED_FILE_KEY = "all_movies_received"
 SHOULD_REENQUEUE_EOF_FILE_KEY = "should_reenqueue_eof"
 
 class MoviesJoiner(Monitorable):
-    def __init__(self, input_queues, output_exchange, cluster_size, id, storage_path):
+    def __init__(self, input_queues, output_exchange, failure_probability, cluster_size, id, storage_path):
         self._input_queue_movies = input_queues[0]
         self._input_queue_to_join = input_queues[1]
         self._output_exchange = output_exchange
+        self._failure_probability = failure_probability
         self._cluster_size = cluster_size
         self._id = id
         self._middleware = None
@@ -84,6 +86,7 @@ class MoviesJoiner(Monitorable):
         self._middleware.send_message(PacketSerde.serialize(client_disconnected))
     
     def __handle_movies_batch_packet(self, packet):
+        fail_with_probability(self._failure_probability, "before handling movies batch packet")
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
@@ -98,6 +101,7 @@ class MoviesJoiner(Monitorable):
             self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+        fail_with_probability(self._failure_probability, f"after handling movies batch packet: {msg.packet_type()}")
 
     def __reenqueue_batch_to_join(self, batch):
         self._middleware.reenqueue_message(PacketSerde.serialize(batch), queue=self._input_queue_to_join[0])
@@ -187,6 +191,7 @@ class MoviesJoiner(Monitorable):
             self._middleware.send_message(PacketSerde.serialize(eof), exchange=exchange)
     
     def __handle_batch_packet_to_join(self, packet):
+        fail_with_probability(self._failure_probability, "before handling batch packet to join")
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.RATINGS_BATCH:
             ratings_batch = msg
@@ -202,6 +207,7 @@ class MoviesJoiner(Monitorable):
             self.__handle_client_disconnected(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+        fail_with_probability(self._failure_probability, f"after handling batch packet to join: {msg.packet_type()}")
 
     def run(self):
         self.start_receiving_health_checks()

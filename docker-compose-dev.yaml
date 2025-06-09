@@ -223,6 +223,7 @@ services:
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q3_1", "movies_produced_in_argentina_released_after_2000_q3_1"),
       ("ratings_1", "ratings_1")]
     - OUTPUT_EXCHANGE=ratings_movies_produced_in_argentina_released_after_2000
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     - STORAGE_PATH=/storage
@@ -278,6 +279,7 @@ services:
     - INPUT_QUEUES=[("movies_produced_in_argentina_released_after_2000_q4_1", "movies_produced_in_argentina_released_after_2000_q4_1"),
       ("credits_1", "credits_1")]
     - OUTPUT_EXCHANGE=credits_movies_produced_in_argentina_released_after_2000
+    - FAILURE_PROBABILITY=0.0
     - CLUSTER_SIZE=1
     - ID=1
     - STORAGE_PATH=/storage

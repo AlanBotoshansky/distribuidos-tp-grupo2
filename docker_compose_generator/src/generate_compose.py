@@ -145,7 +145,7 @@ def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_
         ]
     )
 
-def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes, output_exchange):
+def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_prefixes, output_exchange, failure_probability):
     """
     Generic function to generate a cluster of joiner services
     
@@ -154,6 +154,7 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
         service_prefix: Prefix for the service names
         input_queues_prefixes: List of input queues prefixes
         output_exchange: Output exchange name
+        failure_probability: Probability of service failure
         
     Returns:
         Dictionary mapping service names to their configurations
@@ -171,6 +172,7 @@ def generate_movies_joiner_cluster(cluster_size, service_prefix, input_queues_pr
                 "PYTHONUNBUFFERED=1",
                 f"INPUT_QUEUES={input_queues}",
                 f"OUTPUT_EXCHANGE={output_exchange}",
+                f"FAILURE_PROBABILITY={failure_probability}",
                 f"CLUSTER_SIZE={cluster_size}",
                 f"ID={i}",
                 f"STORAGE_PATH={STORAGE_PATH}"
@@ -398,13 +400,14 @@ def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_
         failure_probability=failure_probability
     )
     
-def generate_movies_ratings_joiner_cluster(cluster_size):
+def generate_movies_ratings_joiner_cluster(cluster_size, failure_probability):
     """Generate the movies ratings joiner services for joining movies and ratings"""
     return generate_movies_joiner_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_ratings_joiner",
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q3", "ratings"],
-        output_exchange="ratings_movies_produced_in_argentina_released_after_2000"
+        output_exchange="ratings_movies_produced_in_argentina_released_after_2000",
+        failure_probability=failure_probability
     )
     
 def generate_most_least_rated_movies_calculator():
@@ -438,13 +441,14 @@ def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_
         failure_probability=failure_probability
     )
     
-def generate_movies_credits_joiner_cluster(cluster_size):
+def generate_movies_credits_joiner_cluster(cluster_size, failure_probability):
     """Generate the movies credits joiner services for joining movies and credits"""
     return generate_movies_joiner_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_credits_joiner",
         input_queues_prefixes=["movies_produced_in_argentina_released_after_2000_q4", "credits"],
-        output_exchange="credits_movies_produced_in_argentina_released_after_2000"
+        output_exchange="credits_movies_produced_in_argentina_released_after_2000",
+        failure_probability=failure_probability
     )
     
 def generate_top_actors_participation_calculator():
@@ -638,7 +642,8 @@ def generate_docker_compose(config_params):
     )
     docker_compose["services"].update(ratings_router_by_movie_id_cluster)
     movies_ratings_joiner_cluster = generate_movies_ratings_joiner_cluster(
-        config_params["movies_ratings_joiner"]
+        config_params["movies_ratings_joiner"],
+        config_params["failure_probabilities"]["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_ratings_joiner_cluster)
     docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator()
@@ -651,7 +656,8 @@ def generate_docker_compose(config_params):
     )
     docker_compose["services"].update(credits_router_by_movie_id_cluster)
     movies_credits_joiner_cluster = generate_movies_credits_joiner_cluster(
-        config_params["movies_credits_joiner"]
+        config_params["movies_credits_joiner"],
+        config_params["failure_probabilities"]["movies_credits_joiner"]
     )
     docker_compose["services"].update(movies_credits_joiner_cluster)
     docker_compose["services"]["top_actors_participation_calculator"] = generate_top_actors_participation_calculator()

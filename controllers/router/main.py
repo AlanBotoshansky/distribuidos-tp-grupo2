@@ -26,7 +26,7 @@ def initialize_config():
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange_prefixes_and_dest_nodes_amount"] = ast.literal_eval(os.getenv('OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT'))
-        config_params["failure_probability"] = float(os.getenv('FAILURE_PROBABILITY')) 
+        config_params["failure_probability"] = float(os.getenv('FAILURE_PROBABILITY'))
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
         config_params["id"] = os.getenv('ID')
     except KeyError as e:

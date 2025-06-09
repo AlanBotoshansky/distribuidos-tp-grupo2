@@ -12,3 +12,6 @@ class PacketType(IntEnum):
     ANALYZED_MOVIES_BATCH = 9
     AVG_RATE_REVENUE_BUDGET = 10
     CLIENT_DISCONNECTED = 11
+
+    def __str__(self):
+        return self.name
