@@ -9,11 +9,13 @@ from messages.movies_batch import MoviesBatch
 from messages.ratings_batch import RatingsBatch
 from messages.credits_batch import CreditsBatch
 from common.monitorable import Monitorable
+from common.failure_simulation import fail_with_probability
 
 class Router(Monitorable):
-    def __init__(self, input_queues, output_exchange_prefixes_and_dest_nodes_amount, cluster_size, id):
+    def __init__(self, input_queues, output_exchange_prefixes_and_dest_nodes_amount, failure_probability, cluster_size, id):
         self._input_queues = input_queues
         self._output_exchange_prefixes_and_dest_nodes_amount = output_exchange_prefixes_and_dest_nodes_amount
+        self._failure_probability = failure_probability
         self._cluster_size = cluster_size
         self._id = id
         self._middleware = None
@@ -108,6 +110,7 @@ class Router(Monitorable):
                 logging.info(f"action: sent_msg | result: success | destination_id: {i}")
     
     def __handle_packet(self, packet):
+        fail_with_probability(self._failure_probability, "before sending message")
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIES_BATCH:
             movies_batch = msg
@@ -131,6 +134,7 @@ class Router(Monitorable):
             self.__send_message_to_all_destination_nodes(client_disconnected)
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+        fail_with_probability(self._failure_probability, "after sending message")
 
     def run(self):
         self.start_receiving_health_checks()

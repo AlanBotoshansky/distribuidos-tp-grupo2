@@ -26,6 +26,7 @@ def initialize_config():
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange_prefixes_and_dest_nodes_amount"] = ast.literal_eval(os.getenv('OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT'))
+        config_params["failure_probability"] = float(os.getenv('FAILURE_PROBABILITY')) 
         config_params["cluster_size"] = int(os.getenv('CLUSTER_SIZE'))
         config_params["id"] = os.getenv('ID')
     except KeyError as e:
@@ -53,6 +54,7 @@ def main():
     logging_level = config_params["logging_level"]
     input_queues = config_params["input_queues"]
     output_exchange_prefixes_and_dest_nodes_amount = config_params["output_exchange_prefixes_and_dest_nodes_amount"]
+    failure_probability = config_params["failure_probability"]
     cluster_size = config_params["cluster_size"]
     id = config_params["id"]
     
@@ -60,9 +62,9 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | input_queues: {input_queues} | output_exchange_prefixes_and_dest_nodes_amount: {output_exchange_prefixes_and_dest_nodes_amount} | cluster_size: {cluster_size} | id: {id}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | input_queues: {input_queues} | output_exchange_prefixes_and_dest_nodes_amount: {output_exchange_prefixes_and_dest_nodes_amount} | failure_probability: {failure_probability} | cluster_size: {cluster_size} | id: {id}")
 
-    router = Router(input_queues, output_exchange_prefixes_and_dest_nodes_amount, cluster_size, id)
+    router = Router(input_queues, output_exchange_prefixes_and_dest_nodes_amount, failure_probability, cluster_size, id)
     router.run()
 
 if __name__ == "__main__":

@@ -112,7 +112,7 @@ def generate_filter_cluster(cluster_size, service_prefix, filter_field, filter_v
         ]
     )
 
-def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_exchange_prefixes_and_dest_nodes_amount):
+def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_exchange_prefixes_and_dest_nodes_amount, failure_probability):
     """
     Generic function to generate a cluster of routing services
     
@@ -121,7 +121,8 @@ def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_
         destination_nodes_amount: Number of destination nodes
         service_prefix: Prefix for the service names
         input_queues: Input queues configuration
-        output_exchange_prefix: Output exchange prefix
+        output_exchange_prefixes_and_dest_nodes_amount: Output exchange prefixes and their destination nodes amount
+        failure_probability: Probability of service failure
         
     Returns:
         Dictionary mapping service names to their configurations
@@ -134,6 +135,7 @@ def generate_routing_cluster(cluster_size, service_prefix, input_queues, output_
             "PYTHONUNBUFFERED=1",
             f"INPUT_QUEUES={input_queues}",
             f"OUTPUT_EXCHANGE_PREFIXES_AND_DEST_NODES_AMOUNT={output_exchange_prefixes_and_dest_nodes_amount}",
+            f"FAILURE_PROBABILITY={failure_probability}",
         ],
         volumes=[
             "./controllers/router/config.ini:/config.ini"
@@ -376,22 +378,24 @@ def generate_movies_filter_date_after_2000_cluster(cluster_size, failure_probabi
         failure_probability=failure_probability
     )
     
-def generate_movies_router_by_id_cluster(cluster_size, movies_ratings_joiner_amount, movies_credits_joiner_amount):
+def generate_movies_router_by_id_cluster(cluster_size, movies_ratings_joiner_amount, movies_credits_joiner_amount, failure_probability):
     """Generate the movies router services for routing by ID"""    
     return generate_routing_cluster(
         cluster_size=cluster_size,
         service_prefix="movies_router_by_id",
         input_queues='[("movies_produced_in_argentina_released_after_2000", "movies_produced_in_argentina_released_after_2000")]',
-        output_exchange_prefixes_and_dest_nodes_amount=f'[("movies_produced_in_argentina_released_after_2000_q3", {movies_ratings_joiner_amount}), ("movies_produced_in_argentina_released_after_2000_q4", {movies_credits_joiner_amount})]'
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("movies_produced_in_argentina_released_after_2000_q3", {movies_ratings_joiner_amount}), ("movies_produced_in_argentina_released_after_2000_q4", {movies_credits_joiner_amount})]',
+        failure_probability=failure_probability
     ) 
     
-def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
+def generate_ratings_router_by_movie_id_cluster(cluster_size, destination_nodes_amount, failure_probability):
     """Generate the ratings router services for routing by movie ID"""
     return generate_routing_cluster(
         cluster_size=cluster_size,
         service_prefix="ratings_router_by_movie_id",
         input_queues='[("ratings", "ratings")]',
-        output_exchange_prefixes_and_dest_nodes_amount=f'[("ratings", {destination_nodes_amount})]'
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("ratings", {destination_nodes_amount})]',
+        failure_probability=failure_probability
     )
     
 def generate_movies_ratings_joiner_cluster(cluster_size):
@@ -424,13 +428,14 @@ def generate_most_least_rated_movies_calculator():
         ]
     )
     
-def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_amount):
+def generate_credits_router_by_movie_id_cluster(cluster_size, destination_nodes_amount, failure_probability):
     """Generate the credits router services for routing by movie ID"""
     return generate_routing_cluster(
         cluster_size=cluster_size,
         service_prefix="credits_router_by_movie_id",
         input_queues='[("credits", "credits")]',
-        output_exchange_prefixes_and_dest_nodes_amount=f'[("credits", {destination_nodes_amount})]'
+        output_exchange_prefixes_and_dest_nodes_amount=f'[("credits", {destination_nodes_amount})]',
+        failure_probability=failure_probability
     )
     
 def generate_movies_credits_joiner_cluster(cluster_size):
@@ -620,14 +625,16 @@ def generate_docker_compose(config_params):
     movies_router_by_id_cluster = generate_movies_router_by_id_cluster(
         config_params["movies_router_by_id"],
         config_params["movies_ratings_joiner"],
-        config_params["movies_credits_joiner"]
+        config_params["movies_credits_joiner"],
+        config_params["failure_probabilities"]["movies_router_by_id"]
     )
     docker_compose["services"].update(movies_router_by_id_cluster)
     
     # Query 3
     ratings_router_by_movie_id_cluster = generate_ratings_router_by_movie_id_cluster(
         config_params["ratings_router_by_movie_id"],
-        config_params["movies_ratings_joiner"]
+        config_params["movies_ratings_joiner"],
+        config_params["failure_probabilities"]["ratings_router_by_movie_id"]
     )
     docker_compose["services"].update(ratings_router_by_movie_id_cluster)
     movies_ratings_joiner_cluster = generate_movies_ratings_joiner_cluster(
@@ -639,7 +646,8 @@ def generate_docker_compose(config_params):
     # Query 4
     credits_router_by_movie_id_cluster = generate_credits_router_by_movie_id_cluster(
         config_params["credits_router_by_movie_id"],
-        config_params["movies_credits_joiner"]
+        config_params["movies_credits_joiner"],
+        config_params["failure_probabilities"]["credits_router_by_movie_id"]
     )
     docker_compose["services"].update(credits_router_by_movie_id_cluster)
     movies_credits_joiner_cluster = generate_movies_credits_joiner_cluster(

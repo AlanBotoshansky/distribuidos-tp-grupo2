@@ -50,6 +50,9 @@ def initialize_config():
         config_params["failure_probabilities"]["movies_filter_produced_in_argentina"] = failure_probabilities.get("movies_filter_produced_in_argentina", 0.0)
         config_params["failure_probabilities"]["movies_filter_released_after_2000"] = failure_probabilities.get("movies_filter_released_after_2000", 0.0)
         config_params["failure_probabilities"]["movies_sentiment_analyzer"] = failure_probabilities.get("movies_sentiment_analyzer", 0.0)
+        config_params["failure_probabilities"]["movies_router_by_id"] = failure_probabilities.get("movies_router_by_id", 0.0)
+        config_params["failure_probabilities"]["ratings_router_by_movie_id"] = failure_probabilities.get("ratings_router_by_movie_id", 0.0)
+        config_params["failure_probabilities"]["credits_router_by_movie_id"] = failure_probabilities.get("credits_router_by_movie_id", 0.0)
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
     except ValueError as e:
