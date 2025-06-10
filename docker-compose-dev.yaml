@@ -298,6 +298,7 @@ services:
     - TOP_N_ACTORS_PARTICIPATION=10
     - INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]
     - OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000
+    - FAILURE_PROBABILITY=0.005
     - STORAGE_PATH=/storage
     volumes:
     - ./controllers/top_actors_participation_calculator/config.ini:/config.ini

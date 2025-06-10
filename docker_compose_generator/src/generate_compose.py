@@ -453,7 +453,7 @@ def generate_movies_credits_joiner_cluster(cluster_size, failure_probability):
         failure_probability=failure_probability
     )
     
-def generate_top_actors_participation_calculator():
+def generate_top_actors_participation_calculator(failure_probability):
     """Generate the top actors participation calculator service configuration"""
     service_name = "top_actors_participation_calculator"
     return generate_service(
@@ -464,6 +464,7 @@ def generate_top_actors_participation_calculator():
             "TOP_N_ACTORS_PARTICIPATION=10",
             "INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]",
             "OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000",
+            f"FAILURE_PROBABILITY={failure_probability}",
             f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
@@ -666,7 +667,9 @@ def generate_docker_compose(config_params):
         config_params["failure_probabilities"]["movies_credits_joiner"]
     )
     docker_compose["services"].update(movies_credits_joiner_cluster)
-    docker_compose["services"]["top_actors_participation_calculator"] = generate_top_actors_participation_calculator()
+    docker_compose["services"]["top_actors_participation_calculator"] = generate_top_actors_participation_calculator(
+        config_params["failure_probabilities"]["top_actors_participation_calculator"]
+    )
 
     # Query 5
     movies_sentiment_analyzer_cluster = generate_movies_sentiment_analyzer_by_overview_cluster(
