@@ -27,7 +27,7 @@ def initialize_config():
         config_params["top_n_investor_countries"] = int(os.getenv('TOP_N_INVESTOR_COUNTRIES'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
-        config_params["failure_probabilities"] = float(os.getenv('FAILURE_PROBABILITY'))
+        config_params["failure_probability"] = float(os.getenv('FAILURE_PROBABILITY'))
         config_params["storage_path"] = os.getenv('STORAGE_PATH')
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
@@ -55,7 +55,7 @@ def main():
     top_n_investor_countries = config_params["top_n_investor_countries"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
-    failure_probability = config_params["failure_probabilities"]
+    failure_probability = config_params["failure_probability"]
     storage_path = config_params["storage_path"]
     
     initialize_log(logging_level)

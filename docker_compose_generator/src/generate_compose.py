@@ -411,7 +411,7 @@ def generate_movies_ratings_joiner_cluster(cluster_size, failure_probability):
         failure_probability=failure_probability
     )
     
-def generate_most_least_rated_movies_calculator():
+def generate_most_least_rated_movies_calculator(failure_probability):
     """Generate the most and least rated movies calculator service configuration"""
     service_name = "most_least_rated_movies_calculator"
     return generate_service(
@@ -421,6 +421,7 @@ def generate_most_least_rated_movies_calculator():
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('ratings_movies_produced_in_argentina_released_after_2000', 'ratings_movies_produced_in_argentina_released_after_2000')]",
             "OUTPUT_EXCHANGE=most_least_rated_movies_produced_in_argentina_released_after_2000",
+            f"FAILURE_PROBABILITY={failure_probability}",
             f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
@@ -649,7 +650,9 @@ def generate_docker_compose(config_params):
         config_params["failure_probabilities"]["movies_ratings_joiner"]
     )
     docker_compose["services"].update(movies_ratings_joiner_cluster)
-    docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator()
+    docker_compose["services"]["most_least_rated_movies_calculator"] = generate_most_least_rated_movies_calculator(
+        config_params["failure_probabilities"]["most_least_rated_movies_calculator"]
+    )
     
     # Query 4
     credits_router_by_movie_id_cluster = generate_credits_router_by_movie_id_cluster(

@@ -9,15 +9,17 @@ from messages.movie_rating import MovieRating
 from messages.movie_ratings_batch import MovieRatingsBatch
 from common.monitorable import Monitorable
 from storage_adapter.storage_adapter import StorageAdapter
+from common.failure_simulation import fail_with_probability
 
 STATE_FILE_KEY = "state"
 MOVIE_RATINGS = "movie_ratings"
 PROCESSED_MESSAGE_IDS= "processed_message_ids"
 
 class MostLeastRatedMoviesCalculator(Monitorable):
-    def __init__(self, input_queues, output_exchange, storage_path):
+    def __init__(self, input_queues, output_exchange, failure_probability, storage_path):
         self._input_queues = input_queues
         self._output_exchange = output_exchange
+        self._failure_probability = failure_probability
         self._middleware = None
         self._state = {}
         self._storage_adapter = StorageAdapter(storage_path)
@@ -94,6 +96,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
             self._storage_adapter.delete(STATE_FILE_KEY, secondary_file_key=client_id)
     
     def __handle_packet(self, packet):
+        fail_with_probability(self._failure_probability, "before handling packet")
         msg = PacketSerde.deserialize(packet)
         if msg.packet_type() == PacketType.MOVIE_RATINGS_BATCH:
             movie_ratings_batch = msg
@@ -106,6 +109,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
                 logging.debug(f"action: sent_movie_ratings_batch | result: success | movie_ratings_batch: {movie_ratings_batch_result}")
             self._middleware.send_message(PacketSerde.serialize(EOF(eof.client_id, message_id=eof.message_id)))
             logging.info("action: sent_eof | result: success")
+            fail_with_probability(self._failure_probability, "after sending results and eof, before cleaning client state")
             self.__clean_client_state(eof.client_id)
         elif msg.packet_type() == PacketType.CLIENT_DISCONNECTED:
             client_disconnected = msg
@@ -114,6 +118,7 @@ class MostLeastRatedMoviesCalculator(Monitorable):
             self._middleware.send_message(PacketSerde.serialize(client_disconnected))
         else:
             logging.error(f"action: unexpected_packet_type | result: fail | packet_type: {msg.packet_type()}")
+        fail_with_probability(self._failure_probability, f"after handling packet: {msg.packet_type()}")
 
     def run(self):
         self.start_receiving_health_checks()
