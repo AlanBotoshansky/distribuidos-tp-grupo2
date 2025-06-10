@@ -298,7 +298,7 @@ services:
     - TOP_N_ACTORS_PARTICIPATION=10
     - INPUT_QUEUES=[('credits_movies_produced_in_argentina_released_after_2000', 'credits_movies_produced_in_argentina_released_after_2000')]
     - OUTPUT_EXCHANGE=top_actors_participation_movies_produced_in_argentina_released_after_2000
-    - FAILURE_PROBABILITY=0.005
+    - FAILURE_PROBABILITY=0.0
     - STORAGE_PATH=/storage
     volumes:
     - ./controllers/top_actors_participation_calculator/config.ini:/config.ini
@@ -327,6 +327,7 @@ services:
     - PYTHONUNBUFFERED=1
     - INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]
     - OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment
+    - FAILURE_PROBABILITY=0.0
     - STORAGE_PATH=/storage
     volumes:
     - ./controllers/avg_rate_revenue_budget_calculator/config.ini:/config.ini

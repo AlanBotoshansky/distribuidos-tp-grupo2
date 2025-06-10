@@ -487,7 +487,7 @@ def generate_movies_sentiment_analyzer_by_overview_cluster(cluster_size, failure
         failure_probability=failure_probability
     )
     
-def generate_avg_rate_revenue_budget_calculator():
+def generate_avg_rate_revenue_budget_calculator(failure_probability):
     """Generate the average rate revenue budget calculator service configuration"""
     service_name = "avg_rate_revenue_budget_calculator"
     return generate_service(
@@ -497,6 +497,7 @@ def generate_avg_rate_revenue_budget_calculator():
             "PYTHONUNBUFFERED=1",
             "INPUT_QUEUES=[('movies_sentiment_analyzed', 'movies_sentiment_analyzed')]",
             "OUTPUT_EXCHANGE=avg_rate_revenue_budget_by_sentiment",
+            f"FAILURE_PROBABILITY={failure_probability}",
             f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
@@ -677,7 +678,9 @@ def generate_docker_compose(config_params):
         config_params["failure_probabilities"]["movies_sentiment_analyzer"]
     )
     docker_compose["services"].update(movies_sentiment_analyzer_cluster)
-    docker_compose["services"]["avg_rate_revenue_budget_calculator"] = generate_avg_rate_revenue_budget_calculator()
+    docker_compose["services"]["avg_rate_revenue_budget_calculator"] = generate_avg_rate_revenue_budget_calculator(
+        config_params["failure_probabilities"]["avg_rate_revenue_budget_calculator"]
+    )
     
     # Health guards
     health_guard_cluster = generate_health_guard_cluster(

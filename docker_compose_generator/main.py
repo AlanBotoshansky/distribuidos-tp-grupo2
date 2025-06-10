@@ -58,6 +58,7 @@ def initialize_config():
         config_params["failure_probabilities"]["top_investor_countries_calculator"] = failure_probabilities.get("top_investor_countries_calculator", 0.0)
         config_params["failure_probabilities"]["most_least_rated_movies_calculator"] = failure_probabilities.get("most_least_rated_movies_calculator", 0.0)
         config_params["failure_probabilities"]["top_actors_participation_calculator"] = failure_probabilities.get("top_actors_participation_calculator", 0.0)
+        config_params["failure_probabilities"]["avg_rate_revenue_budget_calculator"] = failure_probabilities.get("avg_rate_revenue_budget_calculator", 0.0)
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
     except ValueError as e:
