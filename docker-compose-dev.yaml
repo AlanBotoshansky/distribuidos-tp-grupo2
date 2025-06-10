@@ -122,6 +122,7 @@ services:
     - TOP_N_INVESTOR_COUNTRIES=5
     - INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]
     - OUTPUT_EXCHANGE=top_investor_countries
+    - FAILURE_PROBABILITY=0.0
     - STORAGE_PATH=/storage
     volumes:
     - ./controllers/top_investor_countries_calculator/config.ini:/config.ini

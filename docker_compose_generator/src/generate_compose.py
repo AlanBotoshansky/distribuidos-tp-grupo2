@@ -332,7 +332,7 @@ def generate_movies_filter_by_one_country_cluster(cluster_size, failure_probabil
         failure_probability=failure_probability
     )
     
-def generate_top_investor_countries_calculator():
+def generate_top_investor_countries_calculator(failure_probability):
     """Generate the movies top investor countries calculator service configuration"""
     service_name = "top_investor_countries_calculator"
     return generate_service(
@@ -343,6 +343,7 @@ def generate_top_investor_countries_calculator():
             "TOP_N_INVESTOR_COUNTRIES=5",
             "INPUT_QUEUES=[('movies_produced_by_one_country', 'movies_produced_by_one_country')]",
             "OUTPUT_EXCHANGE=top_investor_countries",
+            f"FAILURE_PROBABILITY={failure_probability}",
             f"STORAGE_PATH={STORAGE_PATH}"
         ],
         volumes=[
@@ -613,7 +614,9 @@ def generate_docker_compose(config_params):
         config_params["failure_probabilities"]["movies_filter_by_one_production_country"]
     )
     docker_compose["services"].update(movies_filter_by_one_country_cluster)
-    docker_compose["services"]["top_investor_countries_calculator"] = generate_top_investor_countries_calculator()
+    docker_compose["services"]["top_investor_countries_calculator"] = generate_top_investor_countries_calculator(
+        config_params["failure_probabilities"]["top_investor_countries_calculator"]
+    )
     
     # Queries 3 and 4
     movies_filter_argentina_cluster = generate_movies_filter_argentina_cluster(

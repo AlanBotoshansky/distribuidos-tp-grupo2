@@ -27,6 +27,7 @@ def initialize_config():
         config_params["top_n_investor_countries"] = int(os.getenv('TOP_N_INVESTOR_COUNTRIES'))
         config_params["input_queues"] = ast.literal_eval(os.getenv('INPUT_QUEUES'))
         config_params["output_exchange"] = os.getenv('OUTPUT_EXCHANGE')
+        config_params["failure_probabilities"] = float(os.getenv('FAILURE_PROBABILITY'))
         config_params["storage_path"] = os.getenv('STORAGE_PATH')
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
@@ -54,15 +55,16 @@ def main():
     top_n_investor_countries = config_params["top_n_investor_countries"]
     input_queues = config_params["input_queues"]
     output_exchange = config_params["output_exchange"]
+    failure_probability = config_params["failure_probabilities"]
     storage_path = config_params["storage_path"]
     
     initialize_log(logging_level)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_investor_countries: {top_n_investor_countries} | input_queues: {input_queues} | output_exchange: {output_exchange} | storage_path: {storage_path}")
+    logging.debug(f"action: config | result: success | logging_level: {logging_level} | top_n_investor_countries: {top_n_investor_countries} | input_queues: {input_queues} | output_exchange: {output_exchange} | failure_probability: {failure_probability} | storage_path: {storage_path}")
 
-    top_investor_countries_calculator = TopInvestorCountriesCalculator(top_n_investor_countries, input_queues, output_exchange, storage_path)
+    top_investor_countries_calculator = TopInvestorCountriesCalculator(top_n_investor_countries, input_queues, output_exchange, failure_probability, storage_path)
     top_investor_countries_calculator.run()
 
 if __name__ == "__main__":

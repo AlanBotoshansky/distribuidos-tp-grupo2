@@ -55,6 +55,7 @@ def initialize_config():
         config_params["failure_probabilities"]["credits_router_by_movie_id"] = failure_probabilities.get("credits_router_by_movie_id", 0.0)
         config_params["failure_probabilities"]["movies_ratings_joiner"] = failure_probabilities.get("movies_ratings_joiner", 0.0)
         config_params["failure_probabilities"]["movies_credits_joiner"] = failure_probabilities.get("movies_credits_joiner", 0.0)
+        config_params["failure_probabilities"]["top_investor_countries_calculator"] = failure_probabilities.get("top_investor_countries_calculator", 0.0)
     except KeyError as e:
         raise KeyError(f"Key was not found. Error: {e}")
     except ValueError as e:
