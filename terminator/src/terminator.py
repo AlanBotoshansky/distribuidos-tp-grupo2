@@ -118,7 +118,8 @@ class Terminator:
         if protected_containers:
             print(f"Protected containers (won't be killed): {', '.join([c.name for c in protected_containers])}")
         
-        specific_containers = [c for c in killable_containers if c.name in container_names]
+        specific_containers = [c for c in killable_containers if any(c.name.startswith(container) for container in container_names)]
+        
         killed_count = self.kill_containers(specific_containers)
         
         print(f"\nSummary: {killed_count} containers killed")
@@ -160,7 +161,7 @@ class Terminator:
         
         if excluded_containers:
             original_count = len(killable_containers)
-            killable_containers = [c for c in killable_containers if c.name not in excluded_containers]
+            killable_containers = [c for c in killable_containers if not any(c.name.startswith(ec) for ec in excluded_containers)]
             excluded_count = original_count - len(killable_containers)
             if excluded_count > 0:
                 print(f"Excluded containers: {', '.join(sorted(excluded_containers))}")

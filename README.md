@@ -178,6 +178,20 @@ El `Terminator` es una herramienta externa que permite simular fallas de manera 
   python3 main.py --mode all --arg "data_cleaner,results_handler"
   ```
 
+> **Nota:** En los modos `specific` y `all`, los argumentos (`--arg`) pueden ser tanto nombres de containers individuales como nombres de _cluster_ (prefijos de servicio). Si se especifica un nombre de cluster, se afectarán o excluirán **todos** los containers cuyo nombre comience con ese prefijo.
+>
+> Por ejemplo, para terminar todos los containers del cluster `movies_filter_by_one_production_country`:
+>
+> ```bash
+> python3 main.py --mode specific --arg "movies_filter_by_one_production_country"
+> ```
+>
+> Para excluir un cluster completo en modo `all`:
+>
+> ```bash
+> python3 main.py --mode all --arg "movies_filter_by_one_production_country"
+> ```
+
 **Protecciones implementadas:**
 
 - **Containers protegidos**: RabbitMQ y clientes nunca son terminados para mantener la infraestructura básica.

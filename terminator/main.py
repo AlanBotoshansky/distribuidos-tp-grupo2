@@ -12,10 +12,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 main.py --mode specific --arg "movies_filter_released_between_2000_and_2009_1, movies_filter_by_one_production_country_1"
+  # Kill specific containers or all containers in specific clusters:
+  python3 main.py --mode specific --arg "movies_filter_released_between_2000_and_2009_1, movies_filter_by_one_production_country"
+
+  # Kill N random containers:
   python3 main.py --mode count --arg 3
+
+  # Kill all containers:
   python3 main.py --mode all
-  python3 main.py --mode all --arg "data_cleaner,results_handler"  # exclude specific containers
+
+  # Kill all containers except specific ones or entire clusters:
+  python3 main.py --mode all --arg "data_cleaner,results_handler,movies_filter_by_one_production_country"
         """
     )
     
