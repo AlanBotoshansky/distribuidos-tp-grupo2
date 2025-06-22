@@ -1,6 +1,7 @@
 import signal
 import logging
 import uuid
+import time
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -14,6 +15,7 @@ from common.failure_simulation import fail_with_probability
 STATE_FILE_KEY = "state"
 REVENUE_BUDGET_BY_SENTIMENT = "revenue_budget_by_sentiment"
 PROCESSED_MESSAGE_IDS= "processed_message_ids"
+MAX_PROCESSED_MESSAGE_IDS = 500
 
 class AvgRateRevenueBudgetCalculator(Monitorable):
     def __init__(self, input_queues, output_exchange, failure_probability, storage_path):
@@ -56,9 +58,15 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
         """
         return str(uuid.uuid5(uuid.UUID(message_id), str(sentiment_value)))
     
+    def __save_processed_message_id(self, client_id, message_id):
+        self._state[client_id][PROCESSED_MESSAGE_IDS][message_id] = time.time_ns()
+        if len(self._state[client_id][PROCESSED_MESSAGE_IDS]) > MAX_PROCESSED_MESSAGE_IDS:
+            oldest_message_id = min(self._state[client_id][PROCESSED_MESSAGE_IDS], key=self._state[client_id][PROCESSED_MESSAGE_IDS].get)
+            self._state[client_id][PROCESSED_MESSAGE_IDS].pop(oldest_message_id)
+    
     def __update_revenues_budgets(self, analyzed_movies_batch):
         client_id = analyzed_movies_batch.client_id
-        self._state[client_id] = self._state.get(client_id, {REVENUE_BUDGET_BY_SENTIMENT: {}, PROCESSED_MESSAGE_IDS: set()})
+        self._state[client_id] = self._state.get(client_id, {REVENUE_BUDGET_BY_SENTIMENT: {}, PROCESSED_MESSAGE_IDS: {}})
         if analyzed_movies_batch.message_id in self._state[client_id][PROCESSED_MESSAGE_IDS]:
             return
         for analyzed_movie in analyzed_movies_batch.get_items():
@@ -69,7 +77,7 @@ class AvgRateRevenueBudgetCalculator(Monitorable):
             revenue_sum += revenue
             budget_sum += budget
             self._state[client_id][REVENUE_BUDGET_BY_SENTIMENT][sentiment_value] = (revenue_sum, budget_sum)
-        self._state[client_id][PROCESSED_MESSAGE_IDS].add(analyzed_movies_batch.message_id) 
+        self.__save_processed_message_id(client_id, analyzed_movies_batch.message_id)
         self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
     def __get_avgs_rate_revenue_budget_by_sentiment(self, eof):

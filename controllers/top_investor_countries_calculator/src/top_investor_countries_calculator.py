@@ -1,6 +1,7 @@
 import signal
 import logging
 import uuid
+import time
 from middleware.middleware import Middleware
 from messages.eof import EOF
 from messages.packet_serde import PacketSerde
@@ -13,6 +14,7 @@ from common.failure_simulation import fail_with_probability
 STATE_FILE_KEY = "state"
 INVESTMENT_BY_COUNTRY = "investment_by_country"
 PROCESSED_MESSAGE_IDS= "processed_message_ids"
+MAX_PROCESSED_MESSAGE_IDS = 500
 
 class TopInvestorCountriesCalculator(Monitorable):
     def __init__(self, top_n_investor_countries, input_queues, output_exchange, failure_probability, storage_path):
@@ -56,15 +58,21 @@ class TopInvestorCountriesCalculator(Monitorable):
         """
         return str(uuid.uuid5(uuid.UUID(message_id), country))
     
+    def __save_processed_message_id(self, client_id, message_id):
+        self._state[client_id][PROCESSED_MESSAGE_IDS][message_id] = time.time_ns()
+        if len(self._state[client_id][PROCESSED_MESSAGE_IDS]) > MAX_PROCESSED_MESSAGE_IDS:
+            oldest_message_id = min(self._state[client_id][PROCESSED_MESSAGE_IDS], key=self._state[client_id][PROCESSED_MESSAGE_IDS].get)
+            self._state[client_id][PROCESSED_MESSAGE_IDS].pop(oldest_message_id)
+    
     def __update_investments(self, movies_batch):
         client_id = movies_batch.client_id
-        self._state[client_id] = self._state.get(client_id, {INVESTMENT_BY_COUNTRY: {}, PROCESSED_MESSAGE_IDS: set()})
+        self._state[client_id] = self._state.get(client_id, {INVESTMENT_BY_COUNTRY: {}, PROCESSED_MESSAGE_IDS: {}})
         if movies_batch.message_id in self._state[client_id][PROCESSED_MESSAGE_IDS]:
             return
         for movie in movies_batch.get_items():
             for country in movie.production_countries:
                 self._state[client_id][INVESTMENT_BY_COUNTRY][country] = self._state[client_id][INVESTMENT_BY_COUNTRY].get(country, 0) + movie.budget
-        self._state[client_id][PROCESSED_MESSAGE_IDS].add(movies_batch.message_id)
+        self.__save_processed_message_id(client_id, movies_batch.message_id)
         self._storage_adapter.update(STATE_FILE_KEY, self._state[client_id], secondary_file_key=client_id)
     
     def __get_top_investor_countries(self, client_id):
